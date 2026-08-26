@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>競馬予想集計システム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header-container">
+        <!-- 1. 中央/地方競馬切り替え -->
+        <div class="toggle-group">
+            <button id="btn-chuo" class="btn-toggle active">中央競馬</button>
+            <button id="btn-chiho" class="btn-toggle" disabled title="地方競馬は現在準備中です">地方競馬</button>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- ブロックⅠ: 現在予想しているレース -->
+        <section class="block block-1">
+            <h2 class="block-title">現在のレース予想</h2>
+            
+            <div class="race-info-bar">
+                <div class="select-group">
+                    <label>レース場</label>
+                    <select id="race-place-1" class="select-box">
+                        <option value="--" selected>--</option>
+                        <option value="東京">東京</option>
+                        <option value="中山">中山</option>
+                        <option value="阪神">阪神</option>
+                        <option value="京都">京都</option>
+                        <option value="中京">中京</option>
+                        <option value="札幌">札幌</option>
+                        <option value="函館">函館</option>
+                        <option value="福島">福島</option>
+                        <option value="新潟">新潟</option>
+                        <option value="小倉">小倉</option>
+                    </select>
+                </div>
+
+                <div class="select-group">
+                    <label>R番号</label>
+                    <select id="race-num-1" class="select-box">
+                        <option value="--" selected>--</option>
+                        <option value="1">1</option><option value="2">2</option>
+                        <option value="3">3</option><option value="4">4</option>
+                        <option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option>
+                        <option value="9">9</option><option value="10">10</option>
+                        <option value="11">11</option><option value="12">12</option>
+                    </select>
+                </div>
+
+                <div class="action-btn-group">
+                    <!-- クリアボタンをボタンの左側に配置 -->
+                    <button id="btn-clear-1" class="btn-icon btn-clear" title="予想印のみ消去">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3 trash-icon" viewBox="0 0 16 16">
+                            <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
+                        </svg>
+                    </button>
+                    <!-- 4. 集計ボタン -->
+                    <button id="btn-calc" class="btn-action btn-calc">集計する</button>
+                </div>
+            </div>
+
+            <!-- 5. 予想テーブル -->
+            <div class="table-wrapper">
+                <table id="table-predict-1" class="predict-table">
+                    <thead>
+                        <tr>
+                            <th class="col-kiji">記事</th>
+                            <th class="col-yosouka">予想家</th>
+                            <th class="col-mark-short">◎</th>
+                            <th class="col-mark-short">◯</th>
+                            <th class="col-mark-short">▲</th>
+                            <th class="col-mark-short">☆</th>
+                            <th class="col-mark-long">△</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 初期7行はJSで生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 6. 行の追加/削除 -->
+            <div class="table-controls">
+                <button id="btn-add-1" class="btn-sub">+ 行の追加</button>
+                <button id="btn-del-1" class="btn-sub">- 行の削除</button>
+            </div>
+        </section>
+
+        <!-- ブロックⅡ: 次のレースの予想 -->
+        <section class="block block-2">
+            <div class="block-header-next">
+                <span class="badge-next">NEXT</span>
+                <h2 class="block-title">次のレースの予想</h2>
+            </div>
+
+            <div class="race-info-bar">
+                <div class="select-group">
+                    <label>レース場</label>
+                    <select id="race-place-2" class="select-box">
+                        <option value="--" selected>--</option>
+                        <option value="東京">東京</option>
+                        <option value="中山">中山</option>
+                        <option value="阪神">阪神</option>
+                        <option value="京都">京都</option>
+                        <option value="中京">中京</option>
+                        <option value="札幌">札幌</option>
+                        <option value="函館">函館</option>
+                        <option value="福島">福島</option>
+                        <option value="新潟">新潟</option>
+                        <option value="小倉">小倉</option>
+                    </select>
+                </div>
+
+                <div class="select-group">
+                    <label>R番号</label>
+                    <select id="race-num-2" class="select-box">
+                        <option value="--" selected>--</option>
+                        <option value="1">1</option><option value="2">2</option>
+                        <option value="3">3</option><option value="4">4</option>
+                        <option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option>
+                        <option value="9">9</option><option value="10">10</option>
+                        <option value="11">11</option><option value="12">12</option>
+                    </select>
+                </div>
+
+                <div class="action-btn-group">
+                    <!-- クリアボタンをデータ移行の左側に配置 -->
+                    <button id="btn-clear-2" class="btn-icon btn-clear" title="予想印のみ消去">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3 trash-icon" viewBox="0 0 16 16">
+                            <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
+                        </svg>
+                    </button>
+                    <!-- 12. データ移行ボタン -->
+                    <button id="btn-migrate" class="btn-action btn-migrate">データ移行</button>
+                </div>
+            </div>
+
+            <!-- 9, 10. 次のレース予想テーブル -->
+            <div class="table-wrapper">
+                <table id="table-predict-2" class="predict-table">
+                    <thead>
+                        <tr>
+                            <th class="col-kiji">記事</th>
+                            <th class="col-yosouka">予想家</th>
+                            <th class="col-mark-short">◎</th>
+                            <th class="col-mark-short">◯</th>
+                            <th class="col-mark-short">▲</th>
+                            <th class="col-mark-short">☆</th>
+                            <th class="col-mark-long">△</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 初期7行はJSで生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 13. 行の追加/削除 -->
+            <div class="table-controls">
+                <button id="btn-add-2" class="btn-sub">+ 行の追加</button>
+                <button id="btn-del-2" class="btn-sub">- 行の削除</button>
+            </div>
+        </section>
+
+        <!-- ブロックⅢ: 予想の集計結果 -->
+        <section class="block block-3">
+            <h2 class="block-title">集計結果</h2>
+
+            <!-- 7. 集計結果（総合） -->
+            <div class="result-summary-card">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>◎</th>
+                            <th>◯</th>
+                            <th>▲</th>
+                            <th>☆</th>
+                            <th>△</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="res-double-circle">-</td>
+                            <td id="res-circle">-</td>
+                            <td id="res-triangle">-</td>
+                            <td id="res-star">-</td>
+                            <td id="res-check">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="single-prediction-box">
+                    <div class="single-label">一人だけ予想</div>
+                    <div id="res-single" class="single-value">-</div>
+                </div>
+            </div>
+
+            <!-- 8. 集計結果（トータル） -->
+            <div class="result-total-card">
+                <table id="table-total-result" class="total-table">
+                    <thead>
+                        <tr>
+                            <th>馬番</th>
+                            <th>点数</th>
+                            <th>人数</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="3" class="empty-msg">集計ボタンを押すと表示されます</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- クリア確認モーダル -->
+    <div id="clear-modal" class="modal-overlay">
+        <div class="modal-content">
+            <p class="modal-message">テーブルをクリアしますか？</p>
+            <div class="modal-buttons">
+                <button id="modal-cancel" class="modal-btn modal-btn-cancel">
+                    キャンセル
+                </button>
+                <button id="modal-ok" class="modal-btn modal-btn-ok">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
