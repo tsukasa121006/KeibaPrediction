@@ -273,6 +273,10 @@ body {
     font-size: 0.85rem;
 }
 
+.btn-sub:hover {
+    background: #f0f7f0;
+}
+
 .btn-sub:disabled {
     border-color: #ccc;
     color: #ccc;
@@ -334,6 +338,7 @@ body {
 .total-table {
     width: 100%;
     border-collapse: collapse;
+    margin-bottom: 15px;
 }
 
 .total-table th {
@@ -352,6 +357,47 @@ body {
     color: #888;
     font-size: 0.85rem;
     padding: 20px !important;
+}
+
+/* パドック点数セクション */
+.paddock-score-card {
+    background: #fff;
+    border: 2px solid var(--primary-green);
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 15px;
+}
+
+.paddock-title {
+    font-size: 1rem;
+    color: var(--primary-green);
+    border-bottom: 2px solid var(--primary-green);
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.paddock-control-bar {
+    margin-bottom: 8px;
+}
+
+.paddock-reset-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.paddock-table th {
+    background-color: var(--primary-green);
+    color: #fff;
+}
+
+.col-paddock-num {
+    width: 60px;
+}
+
+.col-paddock-score {
+    width: auto;
 }
 
 /* クリア確認モーダル */

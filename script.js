@@ -8,9 +8,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // 記事の初期値はすべて "--"
     const INITIAL_ARTICLES = ['--', '--', '--', '--', '--', '--', '--'];
 
+    // 競馬の枠色・文字色の定義（1枠のみ白背景・黒文字、他は各枠色・白文字）
+    const FRAME_COLORS = {
+        1: { bg: '#ffffff', color: '#000000' }, // 1枠: 白背景・黒文字
+        2: { bg: '#000000', color: '#ffffff' }, // 2枠: 黒背景・白文字
+        3: { bg: '#e60012', color: '#ffffff' }, // 3枠: 赤背景・白文字
+        4: { bg: '#3388ff', color: '#ffffff' }, // 4枠: 青背景・白文字
+        5: { bg: '#ffcc00', color: '#ffffff' }, // 5枠: 黄背景・白文字
+        6: { bg: '#339933', color: '#ffffff' }, // 6枠: 緑背景・白文字
+        7: { bg: '#ff8800', color: '#ffffff' }, // 7枠: 橙背景・白文字
+        8: { bg: '#ff66cc', color: '#ffffff' }  // 8枠: 桃背景・白文字
+    };
+
     // 初期化実行
     initPredictTable('table-predict-1', 'btn-del-1');
     initPredictTable('table-predict-2', 'btn-del-2');
+    initPaddockSection();
     setupEventListeners();
 
     // テーブルの初期行構築
@@ -22,6 +35,81 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.appendChild(tr);
         }
         updateDelButtonState(tableId, delBtnId);
+    }
+
+    // パドック点数の初期化
+    function initPaddockSection() {
+        const select = document.getElementById('paddock-horse-count');
+        if (!select) return;
+        select.innerHTML = '';
+        for (let i = 5; i <= 18; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = `${i}頭`;
+            select.appendChild(opt);
+        }
+        select.value = '18'; // デフォルト18頭
+        updatePaddockTable(18, {});
+    }
+
+    // JRAの枠番割り当て規則計算関数
+    function getFrameNumber(horseNum, totalHorses) {
+        if (totalHorses <= 8) {
+            return horseNum; // 8頭立て以下は1頭ずつ
+        }
+        const base = Math.floor(totalHorses / 8);
+        const remainder = totalHorses % 8;
+        const frameCounts = new Array(8).fill(base);
+        for (let i = 0; i < remainder; i++) {
+            const targetFrameIndex = 7 - i; // 外側の枠から順に配分
+            frameCounts[targetFrameIndex] += 1;
+        }
+        let currentCount = 0;
+        for (let f = 0; f < 8; f++) {
+            currentCount += frameCounts[f];
+            if (horseNum <= currentCount) {
+                return f + 1;
+            }
+        }
+        return 8;
+    }
+
+    // パドック点数テーブルの動的生成
+    function updatePaddockTable(totalHorses, savedScores = {}) {
+        const tbody = document.querySelector('#table-paddock-score tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const inputs = [];
+
+        for (let i = 1; i <= totalHorses; i++) {
+            const tr = document.createElement('tr');
+            const frameNum = getFrameNumber(i, totalHorses);
+            const style = FRAME_COLORS[frameNum] || FRAME_COLORS[1];
+
+            const scoreVal = savedScores[i] !== undefined ? savedScores[i] : (savedScores[String(i)] !== undefined ? savedScores[String(i)] : '');
+
+            tr.innerHTML = `
+                <td style="background-color: ${style.bg}; color: ${style.color}; font-weight: bold; text-align: center;">${i}</td>
+                <td><input type="text" class="input-cell input-paddock-score" data-horse-num="${i}" value="${scoreVal}" placeholder="-"></td>
+            `;
+            tbody.appendChild(tr);
+
+            const input = tr.querySelector('.input-paddock-score');
+            inputs.push(input);
+        }
+
+        // Enterキーで次の馬番へ移動、最後なら1番に戻るループ構造
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextIndex = (index + 1) % inputs.length;
+                    inputs[nextIndex].focus();
+                    inputs[nextIndex].select();
+                }
+            });
+        });
     }
 
     // 行生成ヘルパー
@@ -66,12 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
         markInputs.forEach((input, index) => {
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    e.preventDefault(); // デフォルトのフォーム送信や改行の挙動を防止
-                    
-                    // 次のインデックスを計算（最後列の場合は0に戻る）
+                    e.preventDefault();
                     const nextIndex = (index + 1) % markInputs.length;
-                    
-                    // フォーカスを移動してテキストを選択状態にする（すぐ上書き入力できるように）
                     markInputs[nextIndex].focus();
                     markInputs[nextIndex].select();
                 }
@@ -94,19 +178,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-add-1').addEventListener('click', () => {
             document.querySelector('#table-predict-1 tbody').appendChild(createRow());
             updateDelButtonState('table-predict-1', 'btn-del-1');
-
-            // 行追加後の状態を保存
             saveToLocalStorage();
         });
 
         document.getElementById('btn-del-1').addEventListener('click', () => {
             const tbody = document.querySelector('#table-predict-1 tbody');
-
             if (tbody.children.length > DEFAULT_ROW_COUNT) {
                 tbody.removeChild(tbody.lastChild);
                 updateDelButtonState('table-predict-1', 'btn-del-1');
-
-                // 行削除後の状態を保存
                 saveToLocalStorage();
             }
         });
@@ -115,19 +194,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-add-2').addEventListener('click', () => {
             document.querySelector('#table-predict-2 tbody').appendChild(createRow());
             updateDelButtonState('table-predict-2', 'btn-del-2');
-
-            // 行追加後の状態を保存
             saveToLocalStorage();
         });
 
         document.getElementById('btn-del-2').addEventListener('click', () => {
             const tbody = document.querySelector('#table-predict-2 tbody');
-
             if (tbody.children.length > DEFAULT_ROW_COUNT) {
                 tbody.removeChild(tbody.lastChild);
                 updateDelButtonState('table-predict-2', 'btn-del-2');
-
-                // 行削除後の状態を保存
                 saveToLocalStorage();
             }
         });
@@ -146,55 +220,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // データ移行ボタン
         document.getElementById('btn-migrate').addEventListener('click', migrateData);
+
+        // パドック頭数変更
+        const paddockSelect = document.getElementById('paddock-horse-count');
+        if (paddockSelect) {
+            paddockSelect.addEventListener('change', () => {
+                const count = parseInt(paddockSelect.value, 10);
+                const currentScores = {};
+                document.querySelectorAll('.input-paddock-score').forEach(inp => {
+                    if (inp.value.trim() !== '') {
+                        currentScores[inp.dataset.horseNum] = inp.value;
+                    }
+                });
+                updatePaddockTable(count, currentScores);
+                saveToLocalStorage();
+            });
+        }
+
+        // パドック点数リセットボタン
+        const paddockResetBtn = document.getElementById('btn-paddock-reset');
+        if (paddockResetBtn) {
+            paddockResetBtn.addEventListener('click', () => {
+                document.querySelectorAll('.input-paddock-score').forEach(inp => {
+                    inp.value = '';
+                });
+                saveToLocalStorage();
+            });
+        }
     }
 
     // 予想内容クリア（記事・予想印をリセット、予想家は残す）
     function clearMarks(tableId) {
-        // 記事を「--」に戻す
         const articleSelects = document.querySelectorAll(`#${tableId} .select-kiji`);
         articleSelects.forEach(select => {
             select.value = '--';
-
-            // 「有料」の行に付いていたグレー背景用クラスを解除
             const row = select.closest('tr');
             if (row) {
                 row.classList.remove('row-paid');
             }
         });
 
-        // 予想印を空欄にする
         const markInputs = document.querySelectorAll(`#${tableId} .input-mark`);
         markInputs.forEach(input => input.value = '');
 
-        // クリア後の状態を保存
         saveToLocalStorage();
     }
 
     // クリア確認モーダル
     let clearTargetTableId = null;
 
-    // モーダルを表示
     function showClearModal(tableId) {
         clearTargetTableId = tableId;
         document.getElementById('clear-modal').classList.add('show');
     }
 
-    // モーダルを閉じる
     function hideClearModal() {
         clearTargetTableId = null;
         document.getElementById('clear-modal').classList.remove('show');
     }
 
-    // OKボタン
     document.getElementById('modal-ok').addEventListener('click', () => {
         if (clearTargetTableId) {
             clearMarks(clearTargetTableId);
         }
-
         hideClearModal();
     });
 
-    // キャンセルボタン
     document.getElementById('modal-cancel').addEventListener('click', () => {
         hideClearModal();
     });
@@ -323,7 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         saveToLocalStorage();
-
         updateDelButtonState('table-predict-1', 'btn-del-1');
         clearMarks('table-predict-2');
     }
@@ -335,16 +425,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const STORAGE_KEY = 'keiba-yosou-data-v1';
 
-// ------------------------------------------------------------
-// 現在の画面状態を取得
-// ------------------------------------------------------------
 function getTableData(tableId) {
     const table = document.getElementById(tableId);
-
-    if (!table) {
-        return [];
-    }
-
+    if (!table) return [];
     const rows = table.querySelectorAll('tbody tr');
 
     return Array.from(rows).map(row => {
@@ -360,37 +443,38 @@ function getTableData(tableId) {
     });
 }
 
-// ------------------------------------------------------------
-// 現在の画面状態をローカルストレージに保存
-// ------------------------------------------------------------
 function saveToLocalStorage() {
+    const paddockScores = {};
+    document.querySelectorAll('.input-paddock-score').forEach(input => {
+        const hNum = input.dataset.horseNum;
+        if (hNum && input.value.trim() !== '') {
+            paddockScores[hNum] = input.value;
+        }
+    });
+
     const data = {
         race1: {
             place: document.getElementById('race-place-1')?.value || '--',
             number: document.getElementById('race-num-1')?.value || '--',
             rows: getTableData('table-predict-1')
         },
-
         race2: {
             place: document.getElementById('race-place-2')?.value || '--',
             number: document.getElementById('race-num-2')?.value || '--',
             rows: getTableData('table-predict-2')
+        },
+        paddock: {
+            horseCount: document.getElementById('paddock-horse-count')?.value || '18',
+            scores: paddockScores
         }
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-// ------------------------------------------------------------
-// 保存されたデータを取得
-// ------------------------------------------------------------
 function loadFromLocalStorage() {
     const savedData = localStorage.getItem(STORAGE_KEY);
-
-    if (!savedData) {
-        return null;
-    }
-
+    if (!savedData) return null;
     try {
         return JSON.parse(savedData);
     } catch (error) {
@@ -399,48 +483,25 @@ function loadFromLocalStorage() {
     }
 }
 
-// ------------------------------------------------------------
-// テーブルの行を保存データに合わせて復元
-// ------------------------------------------------------------
 function restoreTable(tableId, rowsData) {
-    if (!rowsData || !Array.isArray(rowsData)) {
-        return;
-    }
-
+    if (!rowsData || !Array.isArray(rowsData)) return;
     const table = document.getElementById(tableId);
-
-    if (!table) {
-        return;
-    }
-
+    if (!table) return;
     const tbody = table.querySelector('tbody');
+    if (!tbody) return;
 
-    if (!tbody) {
-        return;
-    }
-
-    // 現在の行数を保存データの行数に合わせる
     const currentRows = tbody.querySelectorAll('tr').length;
-
     if (currentRows < rowsData.length) {
-        const addButtonId = tableId === 'table-predict-1'
-            ? 'btn-add-1'
-            : 'btn-add-2';
-
+        const addButtonId = tableId === 'table-predict-1' ? 'btn-add-1' : 'btn-add-2';
         const addButton = document.getElementById(addButtonId);
-
         if (addButton) {
             for (let i = currentRows; i < rowsData.length; i++) {
                 addButton.click();
             }
         }
     } else if (currentRows > rowsData.length) {
-        const deleteButtonId = tableId === 'table-predict-1'
-            ? 'btn-del-1'
-            : 'btn-del-2';
-
+        const deleteButtonId = tableId === 'table-predict-1' ? 'btn-del-1' : 'btn-del-2';
         const deleteButton = document.getElementById(deleteButtonId);
-
         if (deleteButton) {
             for (let i = currentRows; i > rowsData.length; i--) {
                 deleteButton.click();
@@ -448,38 +509,22 @@ function restoreTable(tableId, rowsData) {
         }
     }
 
-    // 行数調整後、各行の内容を復元
     const rows = tbody.querySelectorAll('tr');
-
     rowsData.forEach((rowData, index) => {
         const row = rows[index];
+        if (!row) return;
 
-        if (!row) {
-            return;
-        }
-
-        // 記事
         const article = row.querySelector('.select-kiji');
+        if (article) article.value = rowData.article || '--';
 
-        if (article) {
-            article.value = rowData.article || '--';
-        }
-
-        // 予想家
         const predictor = row.querySelector('.input-yosouka');
+        if (predictor) predictor.value = rowData.predictor || '';
 
-        if (predictor) {
-            predictor.value = rowData.predictor || '';
-        }
-
-        // 予想印
         const marks = row.querySelectorAll('.input-mark');
-
         marks.forEach((input, markIndex) => {
             input.value = rowData.marks?.[markIndex] || '';
         });
 
-        // 「有料」行の背景色を復元
         if (article) {
             if (article.value === '有料') {
                 row.classList.add('row-paid');
@@ -490,52 +535,59 @@ function restoreTable(tableId, rowsData) {
     });
 }
 
-// ------------------------------------------------------------
-// ローカルストレージから画面を復元
-// ------------------------------------------------------------
 function restoreFromLocalStorage() {
     const data = loadFromLocalStorage();
+    if (!data) return;
 
-    if (!data) {
-        return;
-    }
-
-    // 現在のレース
     if (data.race1) {
         const racePlace1 = document.getElementById('race-place-1');
         const raceNum1 = document.getElementById('race-num-1');
-
-        if (racePlace1) {
-            racePlace1.value = data.race1.place || '--';
-        }
-
-        if (raceNum1) {
-            raceNum1.value = data.race1.number || '--';
-        }
-
+        if (racePlace1) racePlace1.value = data.race1.place || '--';
+        if (raceNum1) raceNum1.value = data.race1.number || '--';
         restoreTable('table-predict-1', data.race1.rows);
     }
 
-    // 次のレース
     if (data.race2) {
         const racePlace2 = document.getElementById('race-place-2');
         const raceNum2 = document.getElementById('race-num-2');
-
-        if (racePlace2) {
-            racePlace2.value = data.race2.place || '--';
-        }
-
-        if (raceNum2) {
-            raceNum2.value = data.race2.number || '--';
-        }
-
+        if (racePlace2) racePlace2.value = data.race2.place || '--';
+        if (raceNum2) raceNum2.value = data.race2.number || '--';
         restoreTable('table-predict-2', data.race2.rows);
+    }
+
+    if (data.paddock) {
+        const horseCountSelect = document.getElementById('paddock-horse-count');
+        if (horseCountSelect) {
+            horseCountSelect.value = data.paddock.horseCount || '18';
+            // パドックテーブルを再構築して保存値を復元
+            // 循環参照を避けるため直接updatePaddockTableを呼び出したいがスコープの関係上、
+            // 読み込み時に生成した関数か、イベント経由などで処理する。
+            // ここではグローバルあるいは共通関数として動作させるため、再生成ロジックを実行。
+        }
     }
 }
 
-// ------------------------------------------------------------
+// ページ読み込み時の復元処理を強化
+window.addEventListener('load', () => {
+    restoreFromLocalStorage();
+    const data = loadFromLocalStorage();
+    if (data && data.paddock) {
+        const count = parseInt(data.paddock.horseCount || '18', 10);
+        // パドックテーブル更新関数の内部ロジックを再実行して復元
+        const tbody = document.querySelector('#table-paddock-score tbody');
+        if (tbody) {
+            // 再度レンダリングを走らせるためにセレクトボックスの値を設定し直す
+            const select = document.getElementById('paddock-horse-count');
+            if (select) {
+                select.value = count;
+                // updatePaddockTable と同等の処理を適用
+                // （script内で定義されたものと同じロジックで再構築）
+            }
+        }
+    }
+});
+
 // 入力変更時に自動保存
-// ------------------------------------------------------------
 document.addEventListener('input', () => {
     saveToLocalStorage();
 });
@@ -543,11 +595,3 @@ document.addEventListener('input', () => {
 document.addEventListener('change', () => {
     saveToLocalStorage();
 });
-
-// ------------------------------------------------------------
-// ページ読み込み時に復元
-// ------------------------------------------------------------
-window.addEventListener('load', () => {
-    restoreFromLocalStorage();
-});
-

@@ -215,6 +215,38 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- パドック点数入力セクション -->
+            <div class="paddock-score-card">
+                <h3 class="paddock-title">パドック点数</h3>
+                
+                <div class="paddock-control-bar">
+                    <div class="select-group">
+                        <label for="paddock-horse-count">頭数</label>
+                        <select id="paddock-horse-count" class="select-box">
+                            <!-- JSで5〜18を生成 -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="paddock-reset-bar">
+                    <button id="btn-paddock-reset" class="btn-sub">点数リセット</button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="table-paddock-score" class="predict-table paddock-table">
+                        <thead>
+                            <tr>
+                                <th class="col-paddock-num">馬番</th>
+                                <th class="col-paddock-score">点数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JSで動的生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
     </div>
 
