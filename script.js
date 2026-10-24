@@ -8,23 +8,44 @@ document.addEventListener('DOMContentLoaded', () => {
     // 記事の初期値はすべて "--"
     const INITIAL_ARTICLES = ['--', '--', '--', '--', '--', '--', '--'];
 
-    // 競馬の枠色・文字色の定義（1枠のみ白背景・黒文字、他は各枠色・白文字）
+    // 競馬の枠色・文字色の定義
     const FRAME_COLORS = {
-        1: { bg: '#ffffff', color: '#000000' }, // 1枠: 白背景・黒文字
-        2: { bg: '#000000', color: '#ffffff' }, // 2枠: 黒背景・白文字
-        3: { bg: '#e60012', color: '#ffffff' }, // 3枠: 赤背景・白文字
-        4: { bg: '#3388ff', color: '#ffffff' }, // 4枠: 青背景・白文字
-        5: { bg: '#ffcc00', color: '#ffffff' }, // 5枠: 黄背景・白文字
-        6: { bg: '#339933', color: '#ffffff' }, // 6枠: 緑背景・白文字
-        7: { bg: '#ff8800', color: '#ffffff' }, // 7枠: 橙背景・白文字
-        8: { bg: '#ff66cc', color: '#ffffff' }  // 8枠: 桃背景・白文字
+        1: { bg: '#ffffff', color: '#000000' },
+        2: { bg: '#000000', color: '#ffffff' },
+        3: { bg: '#e60012', color: '#ffffff' },
+        4: { bg: '#3388ff', color: '#ffffff' },
+        5: { bg: '#ffcc00', color: '#ffffff' },
+        6: { bg: '#339933', color: '#ffffff' },
+        7: { bg: '#ff8800', color: '#ffffff' },
+        8: { bg: '#ff66cc', color: '#ffffff' }
     };
+
+    // 切り替え直前の状態（現在表示中のレース情報）を正確に保持する変数
+    let currentRace1 = { place: '--', num: '--' };
+    let currentRace2 = { place: '--', num: '--' };
 
     // 初期化実行
     initPredictTable('table-predict-1', 'btn-del-1');
     initPredictTable('table-predict-2', 'btn-del-2');
     initPaddockSection();
     setupEventListeners();
+
+    // R番号ボタンの選択状態取得・設定ヘルパー関数
+    function getSelectedRaceNum(gridId) {
+        const activeBtn = document.querySelector(`#${gridId} .btn-rnum.active`);
+        return activeBtn ? activeBtn.dataset.r : '--';
+    }
+
+    function setSelectedRaceNum(gridId, rVal) {
+        const buttons = document.querySelectorAll(`#${gridId} .btn-rnum`);
+        buttons.forEach(btn => {
+            if (btn.dataset.r === String(rVal)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
 
     // テーブルの初期行構築
     function initPredictTable(tableId, delBtnId) {
@@ -48,28 +69,23 @@ document.addEventListener('DOMContentLoaded', () => {
             opt.textContent = `${i}頭`;
             select.appendChild(opt);
         }
-        select.value = '18'; // デフォルト18頭
+        select.value = '18';
         updatePaddockTable(18, {});
     }
 
     // JRAの枠番割り当て規則計算関数
     function getFrameNumber(horseNum, totalHorses) {
-        if (totalHorses <= 8) {
-            return horseNum; // 8頭立て以下は1頭ずつ
-        }
+        if (totalHorses <= 8) return horseNum;
         const base = Math.floor(totalHorses / 8);
         const remainder = totalHorses % 8;
         const frameCounts = new Array(8).fill(base);
         for (let i = 0; i < remainder; i++) {
-            const targetFrameIndex = 7 - i; // 外側の枠から順に配分
-            frameCounts[targetFrameIndex] += 1;
+            frameCounts[7 - i] += 1;
         }
         let currentCount = 0;
         for (let f = 0; f < 8; f++) {
             currentCount += frameCounts[f];
-            if (horseNum <= currentCount) {
-                return f + 1;
-            }
+            if (horseNum <= currentCount) return f + 1;
         }
         return 8;
     }
@@ -86,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const tr = document.createElement('tr');
             const frameNum = getFrameNumber(i, totalHorses);
             const style = FRAME_COLORS[frameNum] || FRAME_COLORS[1];
-
             const scoreVal = savedScores[i] !== undefined ? savedScores[i] : (savedScores[String(i)] !== undefined ? savedScores[String(i)] : '');
 
             tr.innerHTML = `
@@ -99,14 +114,18 @@ document.addEventListener('DOMContentLoaded', () => {
             inputs.push(input);
         }
 
-        // Enterキーで次の馬番へ移動、最後なら1番に戻るループ構造
         inputs.forEach((input, index) => {
             input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' || e.key === 'ArrowDown') {
                     e.preventDefault();
                     const nextIndex = (index + 1) % inputs.length;
                     inputs[nextIndex].focus();
                     inputs[nextIndex].select();
+                } else if (e.key === 'Tab' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const prevIndex = (index - 1 + inputs.length) % inputs.length;
+                    inputs[prevIndex].focus();
+                    inputs[prevIndex].select();
                 }
             });
         });
@@ -139,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><input type="text" class="input-cell input-mark" data-mark-idx="4"></td>
         `;
 
-        // 有料選択時の背景色変更イベント
         const kijiSelect = tr.querySelector('.select-kiji');
         kijiSelect.addEventListener('change', (e) => {
             if (e.target.value === '有料') {
@@ -147,9 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 tr.classList.remove('row-paid');
             }
+            saveCurrentData();
         });
 
-        // Enterキーで同じ行内をループ移動する処理
         const markInputs = tr.querySelectorAll('.input-mark');
         markInputs.forEach((input, index) => {
             input.addEventListener('keydown', (e) => {
@@ -165,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return tr;
     }
 
-    // 行削除ボタンのenable/disable制御
     function updateDelButtonState(tableId, delBtnId) {
         const rowCount = document.querySelectorAll(`#${tableId} tbody tr`).length;
         const delBtn = document.getElementById(delBtnId);
@@ -174,11 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // イベントリスナーの一括設定
     function setupEventListeners() {
-        // 行追加・削除 (Ⅰ)
         document.getElementById('btn-add-1').addEventListener('click', () => {
             document.querySelector('#table-predict-1 tbody').appendChild(createRow());
             updateDelButtonState('table-predict-1', 'btn-del-1');
-            saveToLocalStorage();
+            saveCurrentData();
         });
 
         document.getElementById('btn-del-1').addEventListener('click', () => {
@@ -186,15 +202,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tbody.children.length > DEFAULT_ROW_COUNT) {
                 tbody.removeChild(tbody.lastChild);
                 updateDelButtonState('table-predict-1', 'btn-del-1');
-                saveToLocalStorage();
+                saveCurrentData();
             }
         });
 
-        // 行追加・削除 (Ⅱ)
         document.getElementById('btn-add-2').addEventListener('click', () => {
             document.querySelector('#table-predict-2 tbody').appendChild(createRow());
             updateDelButtonState('table-predict-2', 'btn-del-2');
-            saveToLocalStorage();
+            saveCurrentData();
         });
 
         document.getElementById('btn-del-2').addEventListener('click', () => {
@@ -202,11 +217,75 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tbody.children.length > DEFAULT_ROW_COUNT) {
                 tbody.removeChild(tbody.lastChild);
                 updateDelButtonState('table-predict-2', 'btn-del-2');
-                saveToLocalStorage();
+                saveCurrentData();
             }
         });
 
-        // クリアボタン
+        // --- ブロック1: レース場・R番号変更処理 ---
+        function changeRaceBlock1(targetPlace, targetNum) {
+            // ① 変更前のキー（currentRace1）で現行データを確実に退避保存
+            saveBlockByKey('table-predict-1', currentRace1.place, currentRace1.num, 'import-text-1', true);
+
+            // ② 変数 currentRace1 を新しい選択内容に更新
+            currentRace1.place = targetPlace;
+            currentRace1.num = targetNum;
+
+            // ③ 新しいレースデータをロード（データがない場合はクリア）
+            loadBlockData('table-predict-1', currentRace1.place, currentRace1.num, 'import-text-1');
+            
+            // ④ 全体状態（currentStates）を保存
+            saveCurrentStatesOnly();
+        }
+
+        document.querySelectorAll('#race-num-grid-1 .btn-rnum').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetNum = btn.dataset.r;
+                const targetPlace = document.getElementById('race-place-1').value;
+                if (currentRace1.place === targetPlace && currentRace1.num === targetNum) return;
+
+                setSelectedRaceNum('race-num-grid-1', targetNum);
+                changeRaceBlock1(targetPlace, targetNum);
+            });
+        });
+
+        document.getElementById('race-place-1')?.addEventListener('change', (e) => {
+            const targetPlace = e.target.value;
+            const targetNum = getSelectedRaceNum('race-num-grid-1');
+            if (currentRace1.place === targetPlace && currentRace1.num === targetNum) return;
+
+            changeRaceBlock1(targetPlace, targetNum);
+        });
+
+        // --- ブロック2: レース場・R番号変更処理 ---
+        function changeRaceBlock2(targetPlace, targetNum) {
+            saveBlockByKey('table-predict-2', currentRace2.place, currentRace2.num, 'import-text-2', false);
+
+            currentRace2.place = targetPlace;
+            currentRace2.num = targetNum;
+
+            loadBlockData('table-predict-2', currentRace2.place, currentRace2.num, 'import-text-2');
+            saveCurrentStatesOnly();
+        }
+
+        document.querySelectorAll('#race-num-grid-2 .btn-rnum').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetNum = btn.dataset.r;
+                const targetPlace = document.getElementById('race-place-2').value;
+                if (currentRace2.place === targetPlace && currentRace2.num === targetNum) return;
+
+                setSelectedRaceNum('race-num-grid-2', targetNum);
+                changeRaceBlock2(targetPlace, targetNum);
+            });
+        });
+
+        document.getElementById('race-place-2')?.addEventListener('change', (e) => {
+            const targetPlace = e.target.value;
+            const targetNum = getSelectedRaceNum('race-num-grid-2');
+            if (currentRace2.place === targetPlace && currentRace2.num === targetNum) return;
+
+            changeRaceBlock2(targetPlace, targetNum);
+        });
+
         document.getElementById('btn-clear-1').addEventListener('click', () => {
             showClearModal('table-predict-1');
         });
@@ -215,13 +294,39 @@ document.addEventListener('DOMContentLoaded', () => {
             showClearModal('table-predict-2');
         });
 
-        // 集計ボタン
         document.getElementById('btn-calc').addEventListener('click', calculateResults);
-
-        // データ移行ボタン
         document.getElementById('btn-migrate').addEventListener('click', migrateData);
 
-        // パドック頭数変更
+        // AIインポートボタン
+        document.getElementById('btn-import-1').addEventListener('click', () => {
+            importTwitterText('table-predict-1', 'import-text-1');
+        });
+
+        document.getElementById('btn-import-2').addEventListener('click', () => {
+            importTwitterText('table-predict-2', 'import-text-2');
+        });
+
+        // インポートテキストエリア全選択処理
+        ['import-text-1', 'import-text-2'].forEach(id => {
+            const textarea = document.getElementById(id);
+            if (textarea) {
+                textarea.addEventListener('focus', () => {
+                    if (textarea.value) textarea.select();
+                });
+            }
+        });
+
+        // インポートテキストクリアボタン
+        document.getElementById('btn-import-clear-1').addEventListener('click', () => {
+            document.getElementById('import-text-1').value = '';
+            saveCurrentData();
+        });
+
+        document.getElementById('btn-import-clear-2').addEventListener('click', () => {
+            document.getElementById('import-text-2').value = '';
+            saveCurrentData();
+        });
+
         const paddockSelect = document.getElementById('paddock-horse-count');
         if (paddockSelect) {
             paddockSelect.addEventListener('change', () => {
@@ -233,40 +338,224 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 updatePaddockTable(count, currentScores);
-                saveToLocalStorage();
+                saveCurrentData();
             });
         }
 
-        // パドック点数リセットボタン
         const paddockResetBtn = document.getElementById('btn-paddock-reset');
         if (paddockResetBtn) {
             paddockResetBtn.addEventListener('click', () => {
                 document.querySelectorAll('.input-paddock-score').forEach(inp => {
                     inp.value = '';
                 });
-                saveToLocalStorage();
+                saveCurrentData();
             });
         }
     }
 
-    // 予想内容クリア（記事・予想印をリセット、予想家は残す）
+    // Twitterテキスト解析関数
+    function importTwitterText(tableId, textareaId) {
+        const text = document.getElementById(textareaId).value;
+        if (!text.trim()) {
+            alert('貼り付けられたテキストが空です。');
+            return;
+        }
+
+        const table = document.getElementById(tableId);
+        const tbody = table.querySelector('tbody');
+        const rows = tbody.querySelectorAll('tr');
+        if (rows.length === 0) return;
+
+        let targetRow = null;
+        let matchedPredictorName = '';
+
+        for (let row of rows) {
+            const predictorInput = row.querySelector('.input-yosouka');
+            const predictorName = predictorInput ? predictorInput.value.trim() : '';
+
+            if (predictorName !== '' && text.includes(predictorName)) {
+                targetRow = row;
+                matchedPredictorName = predictorName;
+                break;
+            }
+        }
+
+        if (!targetRow) {
+            for (let row of rows) {
+                const predictorInput = row.querySelector('.input-yosouka');
+                const predictorName = predictorInput ? predictorInput.value.trim() : '';
+                if (predictorName === '') {
+                    targetRow = row;
+                    break;
+                }
+            }
+        }
+
+        if (!targetRow) {
+            const newTr = createRow('--', '');
+            tbody.appendChild(newTr);
+
+            const delBtnId = tableId === 'table-predict-1' ? 'btn-del-1' : 'btn-del-2';
+            updateDelButtonState(tableId, delBtnId);
+
+            targetRow = newTr;
+        }
+
+        const markInputs = targetRow.querySelectorAll('.input-mark');
+        const articleSelect = targetRow.querySelector('.select-kiji');
+
+        const targetPredictorInput = targetRow.querySelector('.input-yosouka');
+        const targetPredictorName = targetPredictorInput ? targetPredictorInput.value.trim() : '';
+
+        // 記事抽出
+        let extractedArticle = '--';
+
+        if (/有料/.test(text)) {
+            extractedArticle = '有料';
+        } else if (targetPredictorName.includes('絞り') && /[【\[［]([★☆]+)[】\]］]/.test(text)) {
+            const starMatch = text.match(/[【\[［]([★☆]+)[】\]］]/);
+            if (starMatch && starMatch[1]) {
+                const blackStarCount = (starMatch[1].match(/★/g) || []).length;
+                if (blackStarCount === 1) extractedArticle = 'C';
+                else if (blackStarCount === 2) extractedArticle = 'B';
+                else if (blackStarCount === 3) extractedArticle = 'A';
+                else if (blackStarCount === 4) extractedArticle = 'S';
+                else if (blackStarCount >= 5) extractedArticle = 'SS';
+            }
+        } else {
+            const bracketMatch = text.match(/[【\[［]\s*(SS|S|A|B|C)[+\-＋－]?\s*[】\]］]/i);
+            if (bracketMatch && bracketMatch[1]) {
+                extractedArticle = bracketMatch[1].toUpperCase();
+            } else {
+                const keywordMatch = text.match(/(?:信頼度|自信度|勝負度|評価|ランク|クラス)\s*[:：]?\s*(SS|S|A|B|C)[+\-＋－]?/i);
+                if (keywordMatch && keywordMatch[1]) {
+                    extractedArticle = keywordMatch[1].toUpperCase();
+                } else {
+                    const generalMatch = text.match(/\b(SS|S|A|B|C)[+\-＋－]?\b/i);
+                    if (generalMatch && generalMatch[1]) {
+                        extractedArticle = generalMatch[1].toUpperCase();
+                    }
+                }
+            }
+        }
+
+        if (articleSelect) {
+            articleSelect.value = extractedArticle;
+            if (extractedArticle === '有料') {
+                targetRow.classList.add('row-paid');
+            } else {
+                targetRow.classList.remove('row-paid');
+            }
+        }
+
+        function normalizeNumberString(str) {
+            const circleMap = {
+                '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5',
+                '⑥': '6', '⑦': '7', '⑧': '8', '⑨': '9', '⑩': '10',
+                '⑪': '11', '⑫': '12', '⑬': '13', '⑭': '14', '⑮': '15',
+                '⑯': '16', '⑰': '17', '⑱': '18', '⑲': '19', '⑳': '20',
+                '❶': '1', '❷': '2', '❸': '3', '❹': '4', '❺': '5',
+                '❻': '6', '❼': '7', '❽': '8', '❾': '9', '❿': '10',
+                '⓫': '11', '⓬': '12', '⓭': '13', '⓮': '14', '⓯': '15',
+                '⓰': '16', '⓱': '17', '⓲': '18', '⓳': '19', '⓴': '20'
+            };
+
+            let converted = str;
+            for (let key in circleMap) {
+                converted = converted.replaceAll(key, circleMap[key]);
+            }
+            converted = converted.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+
+            return converted;
+        }
+
+        const extractedMarks = { 0: '', 1: '', 2: '', 3: '', 4: '' };
+        const normalizedText = normalizeNumberString(text);
+        const lines = normalizedText.split(/\r?\n/);
+
+        lines.forEach(line => {
+            const patterns = [
+                { regex: /[◎]\s*([0-9,.\s、・]+)/u, idx: 0 },
+                { regex: /[◯〇○]\s*([0-9,.\s、・]+)/u, idx: 1 },
+                { regex: /[▲]\s*([0-9,.\s、・]+)/u, idx: 2 },
+                { regex: /[☆★]\s*([0-9,.\s、・]+)/u, idx: 3 },
+                { regex: /[△穴]\s*([0-9,.\s、・]+)/u, idx: 4 }
+            ];
+
+            patterns.forEach(p => {
+                const match = line.match(p.regex);
+                if (match && match[1]) {
+                    let rawVal = match[1].trim();
+
+                    const nameMatch = rawVal.match(/^([0-9,.\s、・]+)/);
+                    if (nameMatch) {
+                        rawVal = nameMatch[1];
+                    }
+
+                    let cleaned = rawVal
+                        .replace(/[,，\s、・]+/g, '.')
+                        .replace(/^\.+|\.+$/g, '');
+
+                    if (cleaned) {
+                        if (p.idx === 4 && extractedMarks[4]) {
+                            if (!extractedMarks[4].includes(cleaned)) {
+                                extractedMarks[4] += '.' + cleaned;
+                            }
+                        } else {
+                            extractedMarks[p.idx] = cleaned;
+                        }
+                    }
+                }
+            });
+        });
+
+        if (targetPredictorName.includes('あやね')) {
+            extractedMarks[4] = extractedMarks[3] || '';
+            extractedMarks[3] = '';
+        } else if (targetPredictorName.includes('絞り')) {
+            extractedMarks[3] = extractedMarks[4] || '';
+            extractedMarks[4] = '';
+        }
+
+        let matchedCount = 0;
+        Object.keys(extractedMarks).forEach(idx => {
+            const val = extractedMarks[idx];
+            if (val) {
+                markInputs[idx].value = val;
+                matchedCount++;
+            } else {
+                markInputs[idx].value = '';
+            }
+        });
+
+        if (matchedCount > 0 || extractedArticle !== '--') {
+            let msg = 'テキストを解析し、自動入力しました！';
+            if (matchedPredictorName) {
+                msg += `\n（対象予想家: 「${matchedPredictorName}」の行に入力）`;
+            } else {
+                msg += '\n（一致する予想家がいないため、空欄または新規追加行に入力しました）';
+            }
+            alert(msg);
+            saveCurrentData();
+        } else {
+            alert('有効な予想印（◎◯▲☆★△と馬番）が見つかりませんでした。');
+        }
+    }
+
     function clearMarks(tableId) {
         const articleSelects = document.querySelectorAll(`#${tableId} .select-kiji`);
         articleSelects.forEach(select => {
             select.value = '--';
             const row = select.closest('tr');
-            if (row) {
-                row.classList.remove('row-paid');
-            }
+            if (row) row.classList.remove('row-paid');
         });
 
         const markInputs = document.querySelectorAll(`#${tableId} .input-mark`);
         markInputs.forEach(input => input.value = '');
 
-        saveToLocalStorage();
+        saveCurrentData();
     }
 
-    // クリア確認モーダル
     let clearTargetTableId = null;
 
     function showClearModal(tableId) {
@@ -280,9 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('modal-ok').addEventListener('click', () => {
-        if (clearTargetTableId) {
-            clearMarks(clearTargetTableId);
-        }
+        if (clearTargetTableId) clearMarks(clearTargetTableId);
         hideClearModal();
     });
 
@@ -290,7 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
         hideClearModal();
     });
 
-    // 集計処理コアロジック
     function calculateResults() {
         const rows = document.querySelectorAll('#table-predict-1 tbody tr');
         const horseStats = {};
@@ -331,9 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
             points: horseStats[num].points,
             count: horseStats[num].count
         })).sort((a, b) => {
-            if (b.points !== a.points) {
-                return b.points - a.points;
-            }
+            if (b.points !== a.points) return b.points - a.points;
             return a.num - b.num;
         });
 
@@ -341,7 +625,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTotalTable(sortedHorses);
     }
 
-    // 総合結果の反映
     function updateSummaryResults(sortedHorses) {
         document.getElementById('res-double-circle').textContent = '-';
         document.getElementById('res-circle').textContent = '-';
@@ -369,7 +652,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('res-single').textContent = singleHorses.length > 0 ? singleHorses.join(' ') : '-';
     }
 
-    // トータル結果テーブルの更新
     function updateTotalTable(sortedHorses) {
         const tbody = document.querySelector('#table-total-result tbody');
         tbody.innerHTML = '';
@@ -390,40 +672,130 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // データ移行
     function migrateData() {
         document.getElementById('race-place-1').value = document.getElementById('race-place-2').value;
-        document.getElementById('race-num-1').value = document.getElementById('race-num-2').value;
+        const place2Val = document.getElementById('race-place-2').value;
+        const r2Val = getSelectedRaceNum('race-num-grid-2');
 
-        const rows2 = document.querySelectorAll('#table-predict-2 tbody tr');
-        const tbody1 = document.querySelector('#table-predict-1 tbody');
-        tbody1.innerHTML = '';
+        setSelectedRaceNum('race-num-grid-1', r2Val);
 
-        rows2.forEach(r2 => {
-            const kiji = r2.querySelector('.select-kiji').value;
-            const predictor = r2.querySelector('.input-yosouka').value;
-            const newTr = createRow(kiji, predictor);
+        currentRace1.place = place2Val;
+        currentRace1.num = r2Val;
 
-            const marks2 = r2.querySelectorAll('.input-mark');
-            const newMarks = newTr.querySelectorAll('.input-mark');
-            marks2.forEach((m, idx) => {
-                newMarks[idx].value = m.value;
-            });
+        loadBlockData('table-predict-1', currentRace1.place, currentRace1.num, 'import-text-1');
 
-            tbody1.appendChild(newTr);
-        });
-
-        saveToLocalStorage();
+        saveCurrentData();
         updateDelButtonState('table-predict-1', 'btn-del-1');
         clearMarks('table-predict-2');
     }
+
+    // --- ストレージ処理用内部関数 ---
+
+    // 明示的に渡された place/num キーで単体保存する関数
+    function saveBlockByKey(tableId, place, num, textareaId, includePaddock = false) {
+        if (place === '--' || num === '--') return;
+
+        const savedData = loadFromLocalStorage() || { savedDate: getTodayString(), races: {} };
+        savedData.savedDate = getTodayString();
+        if (!savedData.races) savedData.races = {};
+
+        const key = `${place}_${num}`;
+        const blockData = {
+            rows: getTableData(tableId),
+            importText: document.getElementById(textareaId)?.value || ''
+        };
+
+        if (includePaddock) {
+            const paddockScores = {};
+            document.querySelectorAll('.input-paddock-score').forEach(input => {
+                const hNum = input.dataset.horseNum;
+                if (hNum && input.value.trim() !== '') {
+                    paddockScores[hNum] = input.value;
+                }
+            });
+            const paddockHorseCount = document.getElementById('paddock-horse-count')?.value || '18';
+
+            blockData.paddock = {
+                horseCount: paddockHorseCount,
+                scores: paddockScores
+            };
+        } else if (savedData.races[key]?.paddock) {
+            blockData.paddock = savedData.races[key].paddock;
+        }
+
+        savedData.races[key] = blockData;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedData));
+    }
+
+    function saveCurrentData() {
+        saveBlockByKey('table-predict-1', currentRace1.place, currentRace1.num, 'import-text-1', true);
+        saveBlockByKey('table-predict-2', currentRace2.place, currentRace2.num, 'import-text-2', false);
+        saveCurrentStatesOnly();
+    }
+
+    function saveCurrentStatesOnly() {
+        const savedData = loadFromLocalStorage() || { savedDate: getTodayString(), races: {} };
+        savedData.savedDate = getTodayString();
+        savedData.currentStates = {
+            place1: currentRace1.place,
+            num1: currentRace1.num,
+            place2: currentRace2.place,
+            num2: currentRace2.num
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedData));
+    }
+
+    // 初期復元処理
+    function restoreFromLocalStorage() {
+        const data = loadFromLocalStorage();
+        if (!data) return;
+
+        if (data.currentStates) {
+            currentRace1.place = data.currentStates.place1 || '--';
+            currentRace1.num = data.currentStates.num1 || '--';
+            currentRace2.place = data.currentStates.place2 || '--';
+            currentRace2.num = data.currentStates.num2 || '--';
+
+            const place1 = document.getElementById('race-place-1');
+            if (place1) place1.value = currentRace1.place;
+            if (currentRace1.num !== '--') {
+                setSelectedRaceNum('race-num-grid-1', currentRace1.num);
+            }
+
+            const place2 = document.getElementById('race-place-2');
+            if (place2) place2.value = currentRace2.place;
+            if (currentRace2.num !== '--') {
+                setSelectedRaceNum('race-num-grid-2', currentRace2.num);
+            }
+        }
+
+        loadBlockData('table-predict-1', currentRace1.place, currentRace1.num, 'import-text-1');
+        loadBlockData('table-predict-2', currentRace2.place, currentRace2.num, 'import-text-2');
+    }
+
+    // 入力イベント経由の自動保存リスナー
+    document.addEventListener('input', (e) => {
+        // レース切り替え用のドロップダウン等での入力時を除く
+        if (e.target.id === 'race-place-1' || e.target.id === 'race-place-2') return;
+        saveCurrentData();
+    });
+
+    restoreFromLocalStorage();
 });
 
 // ============================================================
-// ローカルストレージへの自動保存・復元
+// ローカルストレージ制御定義
 // ============================================================
 
-const STORAGE_KEY = 'keiba-yosou-data-v1';
+const STORAGE_KEY = 'keiba-yosou-data-v7';
+
+function getTodayString() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
 function getTableData(tableId) {
     const table = document.getElementById(tableId);
@@ -443,43 +815,71 @@ function getTableData(tableId) {
     });
 }
 
-function saveToLocalStorage() {
-    const paddockScores = {};
-    document.querySelectorAll('.input-paddock-score').forEach(input => {
-        const hNum = input.dataset.horseNum;
-        if (hNum && input.value.trim() !== '') {
-            paddockScores[hNum] = input.value;
+function loadFromLocalStorage() {
+    const savedDataStr = localStorage.getItem(STORAGE_KEY);
+    if (!savedDataStr) return null;
+    try {
+        const data = JSON.parse(savedDataStr);
+        if (data.savedDate !== getTodayString()) {
+            console.log('日付が変わったため、過去の予想データをリセットしました。');
+            localStorage.removeItem(STORAGE_KEY);
+            return null;
         }
-    });
-
-    const data = {
-        race1: {
-            place: document.getElementById('race-place-1')?.value || '--',
-            number: document.getElementById('race-num-1')?.value || '--',
-            rows: getTableData('table-predict-1')
-        },
-        race2: {
-            place: document.getElementById('race-place-2')?.value || '--',
-            number: document.getElementById('race-num-2')?.value || '--',
-            rows: getTableData('table-predict-2')
-        },
-        paddock: {
-            horseCount: document.getElementById('paddock-horse-count')?.value || '18',
-            scores: paddockScores
-        }
-    };
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        return data;
+    } catch (error) {
+        console.error('データの読み込みに失敗しました。', error);
+        return null;
+    }
 }
 
-function loadFromLocalStorage() {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (!savedData) return null;
-    try {
-        return JSON.parse(savedData);
-    } catch (error) {
-        console.error('ローカルストレージのデータを読み込めませんでした。', error);
-        return null;
+function loadBlockData(tableId, place, num, textareaId) {
+    const savedData = loadFromLocalStorage();
+
+    if (savedData && savedData.races && place !== '--' && num !== '--') {
+        const key = `${place}_${num}`;
+        const raceData = savedData.races[key];
+
+        if (raceData) {
+            restoreTable(tableId, raceData.rows);
+            const textarea = document.getElementById(textareaId);
+            if (textarea) textarea.value = raceData.importText || '';
+
+            if (tableId === 'table-predict-1') {
+                const paddockData = raceData.paddock || { horseCount: '18', scores: {} };
+                const count = parseInt(paddockData.horseCount || '18', 10);
+                const event = new CustomEvent('restorePaddock', { detail: { count, scores: paddockData.scores || {} } });
+                window.dispatchEvent(event);
+            }
+            return;
+        }
+    }
+
+    // 該当データが存在しない場合、未入力状態へ初期化
+    initBlockDefault(tableId, textareaId);
+}
+
+function initBlockDefault(tableId, textareaId) {
+    const DEFAULT_ROW_COUNT = 7;
+    const INITIAL_PREDICTORS = ['的中', 'ウマ', 'Maria', 'あやね', '絞り', '', ''];
+    const INITIAL_ARTICLES = ['--', '--', '--', '--', '--', '--', '--'];
+
+    const defaultRows = [];
+    for (let i = 0; i < DEFAULT_ROW_COUNT; i++) {
+        defaultRows.push({
+            article: INITIAL_ARTICLES[i],
+            predictor: INITIAL_PREDICTORS[i] || '',
+            marks: ['', '', '', '', '']
+        });
+    }
+    restoreTable(tableId, defaultRows);
+    const textarea = document.getElementById(textareaId);
+    if (textarea) textarea.value = '';
+
+    if (tableId === 'table-predict-1') {
+        const select = document.getElementById('paddock-horse-count');
+        if (select) select.value = '18';
+        const event = new CustomEvent('restorePaddock', { detail: { count: 18, scores: {} } });
+        window.dispatchEvent(event);
     }
 }
 
@@ -490,108 +890,122 @@ function restoreTable(tableId, rowsData) {
     const tbody = table.querySelector('tbody');
     if (!tbody) return;
 
-    const currentRows = tbody.querySelectorAll('tr').length;
-    if (currentRows < rowsData.length) {
-        const addButtonId = tableId === 'table-predict-1' ? 'btn-add-1' : 'btn-add-2';
-        const addButton = document.getElementById(addButtonId);
-        if (addButton) {
-            for (let i = currentRows; i < rowsData.length; i++) {
-                addButton.click();
-            }
-        }
-    } else if (currentRows > rowsData.length) {
-        const deleteButtonId = tableId === 'table-predict-1' ? 'btn-del-1' : 'btn-del-2';
-        const deleteButton = document.getElementById(deleteButtonId);
-        if (deleteButton) {
-            for (let i = currentRows; i > rowsData.length; i--) {
-                deleteButton.click();
-            }
-        }
-    }
+    tbody.innerHTML = '';
+    
+    rowsData.forEach((rowData) => {
+        const tr = document.createElement('tr');
+        if (rowData.article === '有料') tr.classList.add('row-paid');
 
-    const rows = tbody.querySelectorAll('tr');
-    rowsData.forEach((rowData, index) => {
-        const row = rows[index];
-        if (!row) return;
+        tr.innerHTML = `
+            <td>
+                <select class="input-cell select-kiji">
+                    <option value="--" ${rowData.article === '--' ? 'selected' : ''}>--</option>
+                    <option value="SS" ${rowData.article === 'SS' ? 'selected' : ''}>SS</option>
+                    <option value="S" ${rowData.article === 'S' ? 'selected' : ''}>S</option>
+                    <option value="A" ${rowData.article === 'A' ? 'selected' : ''}>A</option>
+                    <option value="B" ${rowData.article === 'B' ? 'selected' : ''}>B</option>
+                    <option value="C" ${rowData.article === 'C' ? 'selected' : ''}>C</option>
+                    <option value="有料" ${rowData.article === '有料' ? 'selected' : ''}>有料</option>
+                </select>
+            </td>
+            <td>
+                <input type="text" class="input-cell input-yosouka" value="${rowData.predictor || ''}" placeholder="名前を入力">
+            </td>
+            <td><input type="text" class="input-cell input-mark" data-mark-idx="0" value="${rowData.marks?.[0] || ''}"></td>
+            <td><input type="text" class="input-cell input-mark" data-mark-idx="1" value="${rowData.marks?.[1] || ''}"></td>
+            <td><input type="text" class="input-cell input-mark" data-mark-idx="2" value="${rowData.marks?.[2] || ''}"></td>
+            <td><input type="text" class="input-cell input-mark" data-mark-idx="3" value="${rowData.marks?.[3] || ''}"></td>
+            <td><input type="text" class="input-cell input-mark" data-mark-idx="4" value="${rowData.marks?.[4] || ''}"></td>
+        `;
 
-        const article = row.querySelector('.select-kiji');
-        if (article) article.value = rowData.article || '--';
-
-        const predictor = row.querySelector('.input-yosouka');
-        if (predictor) predictor.value = rowData.predictor || '';
-
-        const marks = row.querySelectorAll('.input-mark');
-        marks.forEach((input, markIndex) => {
-            input.value = rowData.marks?.[markIndex] || '';
+        const markInputs = tr.querySelectorAll('.input-mark');
+        markInputs.forEach((input, index) => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextIndex = (index + 1) % markInputs.length;
+                    markInputs[nextIndex].focus();
+                    markInputs[nextIndex].select();
+                }
+            });
         });
 
-        if (article) {
-            if (article.value === '有料') {
-                row.classList.add('row-paid');
-            } else {
-                row.classList.remove('row-paid');
-            }
-        }
+        tbody.appendChild(tr);
     });
+
+    const delBtnId = tableId === 'table-predict-1' ? 'btn-del-1' : 'btn-del-2';
+    const delBtn = document.getElementById(delBtnId);
+    if (delBtn) delBtn.disabled = tbody.children.length <= 7;
 }
 
-function restoreFromLocalStorage() {
-    const data = loadFromLocalStorage();
-    if (!data) return;
+// パドック復元イベント
+window.addEventListener('restorePaddock', (e) => {
+    const { count, scores } = e.detail;
+    const tbody = document.querySelector('#table-paddock-score tbody');
+    if (!tbody) return;
 
-    if (data.race1) {
-        const racePlace1 = document.getElementById('race-place-1');
-        const raceNum1 = document.getElementById('race-num-1');
-        if (racePlace1) racePlace1.value = data.race1.place || '--';
-        if (raceNum1) raceNum1.value = data.race1.number || '--';
-        restoreTable('table-predict-1', data.race1.rows);
-    }
+    const select = document.getElementById('paddock-horse-count');
+    if (select) select.value = count;
 
-    if (data.race2) {
-        const racePlace2 = document.getElementById('race-place-2');
-        const raceNum2 = document.getElementById('race-num-2');
-        if (racePlace2) racePlace2.value = data.race2.place || '--';
-        if (raceNum2) raceNum2.value = data.race2.number || '--';
-        restoreTable('table-predict-2', data.race2.rows);
-    }
-
-    if (data.paddock) {
-        const horseCountSelect = document.getElementById('paddock-horse-count');
-        if (horseCountSelect) {
-            horseCountSelect.value = data.paddock.horseCount || '18';
-            // パドックテーブルを再構築して保存値を復元
-            // 循環参照を避けるため直接updatePaddockTableを呼び出したいがスコープの関係上、
-            // 読み込み時に生成した関数か、イベント経由などで処理する。
-            // ここではグローバルあるいは共通関数として動作させるため、再生成ロジックを実行。
+    function getFrameNumber(horseNum, totalHorses) {
+        if (totalHorses <= 8) return horseNum;
+        const base = Math.floor(totalHorses / 8);
+        const remainder = totalHorses % 8;
+        const frameCounts = new Array(8).fill(base);
+        for (let i = 0; i < remainder; i++) {
+            frameCounts[7 - i] += 1;
         }
+        let currentCount = 0;
+        for (let f = 0; f < 8; f++) {
+            currentCount += frameCounts[f];
+            if (horseNum <= currentCount) return f + 1;
+        }
+        return 8;
     }
-}
 
-// ページ読み込み時の復元処理を強化
-window.addEventListener('load', () => {
-    restoreFromLocalStorage();
-    const data = loadFromLocalStorage();
-    if (data && data.paddock) {
-        const count = parseInt(data.paddock.horseCount || '18', 10);
-        // パドックテーブル更新関数の内部ロジックを再実行して復元
-        const tbody = document.querySelector('#table-paddock-score tbody');
-        if (tbody) {
-            // 再度レンダリングを走らせるためにセレクトボックスの値を設定し直す
-            const select = document.getElementById('paddock-horse-count');
-            if (select) {
-                select.value = count;
-                // updatePaddockTable と同等の処理を適用
-                // （script内で定義されたものと同じロジックで再構築）
+    const FRAME_COLORS = {
+        1: { bg: '#ffffff', color: '#000000' },
+        2: { bg: '#000000', color: '#ffffff' },
+        3: { bg: '#e60012', color: '#ffffff' },
+        4: { bg: '#3388ff', color: '#ffffff' },
+        5: { bg: '#ffcc00', color: '#ffffff' },
+        6: { bg: '#339933', color: '#ffffff' },
+        7: { bg: '#ff8800', color: '#ffffff' },
+        8: { bg: '#ff66cc', color: '#ffffff' }
+    };
+
+    tbody.innerHTML = '';
+    const inputs = [];
+
+    for (let i = 1; i <= count; i++) {
+        const tr = document.createElement('tr');
+        const frameNum = getFrameNumber(i, count);
+        const style = FRAME_COLORS[frameNum] || FRAME_COLORS[1];
+        const scoreVal = scores[i] !== undefined ? scores[i] : (scores[String(i)] !== undefined ? scores[String(i)] : '');
+
+        tr.innerHTML = `
+            <td style="background-color: ${style.bg}; color: ${style.color}; font-weight: bold; text-align: center;">${i}</td>
+            <td><input type="text" class="input-cell input-paddock-score" data-horse-num="${i}" value="${scoreVal}" placeholder="-"></td>
+        `;
+        tbody.appendChild(tr);
+
+        const input = tr.querySelector('.input-paddock-score');
+        inputs.push(input);
+    }
+
+    inputs.forEach((input, index) => {
+        input.addEventListener('keydown', (evt) => {
+            if (evt.key === 'Enter' || evt.key === 'ArrowDown') {
+                evt.preventDefault();
+                const nextIndex = (index + 1) % inputs.length;
+                inputs[nextIndex].focus();
+                inputs[nextIndex].select();
+            } else if (evt.key === 'Tab' || evt.key === 'ArrowUp') {
+                evt.preventDefault();
+                const prevIndex = (index - 1 + inputs.length) % inputs.length;
+                inputs[prevIndex].focus();
+                inputs[prevIndex].select();
             }
-        }
-    }
-});
-
-// 入力変更時に自動保存
-document.addEventListener('input', () => {
-    saveToLocalStorage();
-});
-
-document.addEventListener('change', () => {
-    saveToLocalStorage();
+        });
+    });
 });

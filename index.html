@@ -38,27 +38,33 @@
                     </select>
                 </div>
 
+                <!-- R番号：6列2行のボタンパネル -->
                 <div class="select-group">
                     <label>R番号</label>
-                    <select id="race-num-1" class="select-box">
-                        <option value="--" selected>--</option>
-                        <option value="1">1</option><option value="2">2</option>
-                        <option value="3">3</option><option value="4">4</option>
-                        <option value="5">5</option><option value="6">6</option>
-                        <option value="7">7</option><option value="8">8</option>
-                        <option value="9">9</option><option value="10">10</option>
-                        <option value="11">11</option><option value="12">12</option>
-                    </select>
+                    <div id="race-num-grid-1" class="race-num-grid">
+                        <button class="btn-rnum" data-r="1">1</button>
+                        <button class="btn-rnum" data-r="2">2</button>
+                        <button class="btn-rnum" data-r="3">3</button>
+                        <button class="btn-rnum" data-r="4">4</button>
+                        <button class="btn-rnum" data-r="5">5</button>
+                        <button class="btn-rnum" data-r="6">6</button>
+                        <button class="btn-rnum" data-r="7">7</button>
+                        <button class="btn-rnum" data-r="8">8</button>
+                        <button class="btn-rnum" data-r="9">9</button>
+                        <button class="btn-rnum" data-r="10">10</button>
+                        <button class="btn-rnum" data-r="11">11</button>
+                        <button class="btn-rnum" data-r="12">12</button>
+                    </div>
                 </div>
 
                 <div class="action-btn-group">
-                    <!-- クリアボタンをボタンの左側に配置 -->
+                    <!-- クリアボタン -->
                     <button id="btn-clear-1" class="btn-icon btn-clear" title="予想印のみ消去">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3 trash-icon" viewBox="0 0 16 16">
                             <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
                         </svg>
                     </button>
-                    <!-- 4. 集計ボタン -->
+                    <!-- 集計ボタン -->
                     <button id="btn-calc" class="btn-action btn-calc">集計する</button>
                 </div>
             </div>
@@ -88,6 +94,16 @@
                 <button id="btn-add-1" class="btn-sub">+ 行の追加</button>
                 <button id="btn-del-1" class="btn-sub">- 行の削除</button>
             </div>
+
+            <!-- Twitterテキスト貼り付けエリア (ブロック1) -->
+            <div class="ai-import-card">
+                <div class="ai-import-header">
+                    <div class="ai-import-title">X（Twitter）投稿から自動入力</div>
+                    <button id="btn-import-clear-1" class="btn-sub btn-import-clear">クリア</button>
+                </div>
+                <textarea id="import-text-1" class="ai-textarea" placeholder="例: ◎1 ◯3 ▲5 ☆7 △2.4.6"></textarea>
+                <button id="btn-import-1" class="btn-sub btn-ai-exec">AI解析して自動入力</button>
+            </div>
         </section>
 
         <!-- ブロックⅡ: 次のレースの予想 -->
@@ -115,32 +131,38 @@
                     </select>
                 </div>
 
+                <!-- R番号：6列2行のボタンパネル -->
                 <div class="select-group">
                     <label>R番号</label>
-                    <select id="race-num-2" class="select-box">
-                        <option value="--" selected>--</option>
-                        <option value="1">1</option><option value="2">2</option>
-                        <option value="3">3</option><option value="4">4</option>
-                        <option value="5">5</option><option value="6">6</option>
-                        <option value="7">7</option><option value="8">8</option>
-                        <option value="9">9</option><option value="10">10</option>
-                        <option value="11">11</option><option value="12">12</option>
-                    </select>
+                    <div id="race-num-grid-2" class="race-num-grid">
+                        <button class="btn-rnum" data-r="1">1</button>
+                        <button class="btn-rnum" data-r="2">2</button>
+                        <button class="btn-rnum" data-r="3">3</button>
+                        <button class="btn-rnum" data-r="4">4</button>
+                        <button class="btn-rnum" data-r="5">5</button>
+                        <button class="btn-rnum" data-r="6">6</button>
+                        <button class="btn-rnum" data-r="7">7</button>
+                        <button class="btn-rnum" data-r="8">8</button>
+                        <button class="btn-rnum" data-r="9">9</button>
+                        <button class="btn-rnum" data-r="10">10</button>
+                        <button class="btn-rnum" data-r="11">11</button>
+                        <button class="btn-rnum" data-r="12">12</button>
+                    </div>
                 </div>
 
                 <div class="action-btn-group">
-                    <!-- クリアボタンをデータ移行の左側に配置 -->
+                    <!-- クリアボタン -->
                     <button id="btn-clear-2" class="btn-icon btn-clear" title="予想印のみ消去">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3 trash-icon" viewBox="0 0 16 16">
                             <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
                         </svg>
                     </button>
-                    <!-- 12. データ移行ボタン -->
+                    <!-- データ移行ボタン -->
                     <button id="btn-migrate" class="btn-action btn-migrate">データ移行</button>
                 </div>
             </div>
 
-            <!-- 9, 10. 次のレース予想テーブル -->
+            <!-- 次のレース予想テーブル -->
             <div class="table-wrapper">
                 <table id="table-predict-2" class="predict-table">
                     <thead>
@@ -160,10 +182,20 @@
                 </table>
             </div>
 
-            <!-- 13. 行の追加/削除 -->
+            <!-- 行の追加/削除 -->
             <div class="table-controls">
                 <button id="btn-add-2" class="btn-sub">+ 行の追加</button>
                 <button id="btn-del-2" class="btn-sub">- 行の削除</button>
+            </div>
+
+            <!-- Twitterテキスト貼り付けエリア (ブロック2) -->
+            <div class="ai-import-card">
+                <div class="ai-import-header">
+                    <div class="ai-import-title">X（Twitter）投稿から自動入力</div>
+                    <button id="btn-import-clear-2" class="btn-sub btn-import-clear">クリア</button>
+                </div>
+                <textarea id="import-text-2" class="ai-textarea" placeholder="例: ◎1 ◯3 ▲5 ☆7 △2.4.6"></textarea>
+                <button id="btn-import-2" class="btn-sub btn-ai-exec">AI解析して自動入力</button>
             </div>
         </section>
 
@@ -171,7 +203,7 @@
         <section class="block block-3">
             <h2 class="block-title">集計結果</h2>
 
-            <!-- 7. 集計結果（総合） -->
+            <!-- 集計結果（総合） -->
             <div class="result-summary-card">
                 <table class="summary-table">
                     <thead>
@@ -200,7 +232,7 @@
                 </div>
             </div>
 
-            <!-- 8. 集計結果（トータル） -->
+            <!-- 集計結果（トータル） -->
             <div class="result-total-card">
                 <table id="table-total-result" class="total-table">
                     <thead>
@@ -227,9 +259,6 @@
                             <!-- JSで5〜18を生成 -->
                         </select>
                     </div>
-                </div>
-
-                <div class="paddock-reset-bar">
                     <button id="btn-paddock-reset" class="btn-sub">点数リセット</button>
                 </div>
 

@@ -8,8 +8,8 @@
     --accent-gold-hover: #b08d48;
     --accent-blue: #0088cc;
     --gray-bg: #e0e0e0;
-    --border-color: #ccc;
-    --text-color: #333;
+    --border-color: #333333;
+    --text-color: #333333;
 }
 
 * {
@@ -96,6 +96,7 @@ body {
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
 }
 
 .block-title {
@@ -124,7 +125,7 @@ body {
 /* レース情報コントロールバー */
 .race-info-bar {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 12px;
     margin-bottom: 15px;
     flex-wrap: wrap;
@@ -145,7 +146,52 @@ body {
     background: #fff;
 }
 
-/* 右側のボタンエリアグループ（クリアボタン＋メインボタン） */
+/* 6列2行のR番号グリッド構造 */
+.race-num-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(2, auto);
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    overflow: hidden;
+    border-radius: 2px;
+}
+
+.btn-rnum {
+    border: none;
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    background: #ffffff;
+    color: var(--text-color);
+    font-weight: bold;
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+/* 各行最後の右ボーダー消去 */
+.btn-rnum:nth-child(6n) {
+    border-right: none;
+}
+
+/* 2行目の下ボーダー消去 */
+.btn-rnum:nth-child(n+7) {
+    border-bottom: none;
+}
+
+.btn-rnum:hover {
+    background: #eef4ed;
+}
+
+/* 選択された状態のスタイル（画像内の緑色スタイルに準拠） */
+.btn-rnum.active {
+    background-color: var(--primary-green) !important;
+    color: #ffffff !important;
+}
+
+/* 右側のボタンエリアグループ */
 .action-btn-group {
     display: flex;
     align-items: center;
@@ -213,7 +259,7 @@ body {
 }
 
 .predict-table th, .predict-table td {
-    border: 1px solid var(--border-color);
+    border: 1px solid #ccc;
     text-align: center;
     padding: 4px;
 }
@@ -226,11 +272,7 @@ body {
 /* 幅の調整 */
 .col-kiji { width: 75px; }
 .col-yosouka { width: 110px; }
-
-/* ◎、◯、▲、☆は半角3文字分（約45px） */
 .col-mark-short { width: 45px; }
-
-/* △は半角15文字分（約150px） */
 .col-mark-long { width: 150px; }
 
 /* 有料行の背景色グレー化 */
@@ -261,6 +303,7 @@ body {
 .table-controls {
     display: flex;
     gap: 10px;
+    margin-bottom: 12px;
 }
 
 .btn-sub {
@@ -281,6 +324,67 @@ body {
     border-color: #ccc;
     color: #ccc;
     cursor: not-allowed;
+}
+
+/* Twitterテキストインポートカードエリア */
+.ai-import-card {
+    background: #fafbfc;
+    border: 1px dashed var(--primary-green);
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.ai-import-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.ai-import-title {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--primary-green);
+}
+
+.ai-import-clear {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    background: #fff;
+    border-color: #bbb;
+    color: #666;
+}
+
+.ai-import-clear:hover {
+    background: #eee;
+    color: #333;
+}
+
+.ai-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    resize: vertical;
+    margin-bottom: 6px;
+    background: #fff;
+}
+
+.ai-textarea:focus {
+    outline: 2px solid var(--accent-gold);
+}
+
+.btn-ai-exec {
+    background-color: var(--primary-green);
+    color: #fff;
+    border: none;
+}
+
+.btn-ai-exec:hover {
+    background-color: var(--header-green);
 }
 
 /* 集計結果エリア（Ⅲ） */
@@ -305,7 +409,7 @@ body {
 }
 
 .summary-table td {
-    border: 1px solid var(--border-color);
+    border: 1px solid #ccc;
     text-align: center;
     padding: 8px;
     font-weight: bold;
@@ -313,7 +417,7 @@ body {
 }
 
 .single-prediction-box {
-    border: 1px solid var(--border-color);
+    border: 1px solid #ccc;
     border-radius: 4px;
     overflow: hidden;
 }
@@ -348,7 +452,7 @@ body {
 }
 
 .total-table td {
-    border: 1px solid var(--border-color);
+    border: 1px solid #ccc;
     text-align: center;
     padding: 6px;
 }
@@ -378,12 +482,9 @@ body {
 }
 
 .paddock-control-bar {
-    margin-bottom: 8px;
-}
-
-.paddock-reset-bar {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: flex-end;
     margin-bottom: 10px;
 }
 
@@ -451,7 +552,7 @@ body {
 
 .modal-btn-cancel {
     background: #fff;
-    border: 1px solid var(--border-color);
+    border: 1px solid #ccc;
     color: var(--text-color);
 }
 
