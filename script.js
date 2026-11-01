@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // パドック点数テーブルの動的生成
-    function updatePaddockTable(totalHorses, savedScores = {}) {
+    function updatePaddockTable(totalHorses, savedScores = {}, highlightedHorses = []) {
         const tbody = document.querySelector('#table-paddock-score tbody');
         if (!tbody) return;
         tbody.innerHTML = '';
@@ -104,9 +104,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const style = FRAME_COLORS[frameNum] || FRAME_COLORS[1];
             const scoreVal = savedScores[i] !== undefined ? savedScores[i] : (savedScores[String(i)] !== undefined ? savedScores[String(i)] : '');
 
+            // 推奨馬ハイライト判定
+            const isHighlighted = highlightedHorses.includes(String(i)) || highlightedHorses.includes(i);
+            const highlightClass = isHighlighted ? ' paddock-highlight' : '';
+
             tr.innerHTML = `
                 <td style="background-color: ${style.bg}; color: ${style.color}; font-weight: bold; text-align: center;">${i}</td>
-                <td><input type="text" class="input-cell input-paddock-score" data-horse-num="${i}" value="${scoreVal}" placeholder="-"></td>
+                <td class="${highlightClass}"><input type="text" class="input-cell input-paddock-score" data-horse-num="${i}" value="${scoreVal}" placeholder="-"></td>
             `;
             tbody.appendChild(tr);
 
@@ -189,6 +193,40 @@ document.addEventListener('DOMContentLoaded', () => {
         delBtn.disabled = rowCount <= DEFAULT_ROW_COUNT;
     }
 
+    // パドック推奨馬の反映処理
+    function applyPaddockRecommend() {
+        const inputVal = document.getElementById('paddock-recommend-input').value.trim();
+        const count = parseInt(document.getElementById('paddock-horse-count').value, 10);
+        
+        // 現在入力されている点数を取得
+        const currentScores = {};
+        document.querySelectorAll('.input-paddock-score').forEach(inp => {
+            if (inp.value.trim() !== '') {
+                currentScores[inp.dataset.horseNum] = inp.value;
+            }
+        });
+
+        // 区切り文字（. または ,）で分割して馬番配列を作成
+        const horseNums = inputVal.split(/[.,]/).map(n => n.trim()).filter(n => n !== '');
+        
+        updatePaddockTable(count, currentScores, horseNums);
+        saveCurrentData();
+    }
+
+    // パドック推奨馬のクリア処理
+    function clearPaddockRecommend() {
+        document.getElementById('paddock-recommend-input').value = '';
+        const count = parseInt(document.getElementById('paddock-horse-count').value, 10);
+        const currentScores = {};
+        document.querySelectorAll('.input-paddock-score').forEach(inp => {
+            if (inp.value.trim() !== '') {
+                currentScores[inp.dataset.horseNum] = inp.value;
+            }
+        });
+        updatePaddockTable(count, currentScores, []);
+        saveCurrentData();
+    }
+
     // イベントリスナーの一括設定
     function setupEventListeners() {
         document.getElementById('btn-add-1').addEventListener('click', () => {
@@ -223,17 +261,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- ブロック1: レース場・R番号変更処理 ---
         function changeRaceBlock1(targetPlace, targetNum) {
-            // ① 変更前のキー（currentRace1）で現行データを確実に退避保存
             saveBlockByKey('table-predict-1', currentRace1.place, currentRace1.num, 'import-text-1', true);
 
-            // ② 変数 currentRace1 を新しい選択内容に更新
             currentRace1.place = targetPlace;
             currentRace1.num = targetNum;
 
-            // ③ 新しいレースデータをロード（データがない場合はクリア）
             loadBlockData('table-predict-1', currentRace1.place, currentRace1.num, 'import-text-1');
-            
-            // ④ 全体状態（currentStates）を保存
             saveCurrentStatesOnly();
         }
 
@@ -337,7 +370,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         currentScores[inp.dataset.horseNum] = inp.value;
                     }
                 });
-                updatePaddockTable(count, currentScores);
+                const highlighted = [];
+                document.querySelectorAll('#table-paddock-score tbody tr').forEach(tr => {
+                    if (tr.children[1].classList.contains('paddock-highlight')) {
+                        highlighted.push(tr.children[0].textContent.trim());
+                    }
+                });
+                updatePaddockTable(count, currentScores, highlighted);
                 saveCurrentData();
             });
         }
@@ -351,6 +390,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveCurrentData();
             });
         }
+
+        // パドック推奨馬の反映・クリアボタン
+        document.getElementById('btn-paddock-recommend-apply').addEventListener('click', applyPaddockRecommend);
+        document.getElementById('btn-paddock-recommend-clear').addEventListener('click', clearPaddockRecommend);
     }
 
     // Twitterテキスト解析関数
@@ -691,7 +734,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ストレージ処理用内部関数 ---
 
-    // 明示的に渡された place/num キーで単体保存する関数
     function saveBlockByKey(tableId, place, num, textareaId, includePaddock = false) {
         if (place === '--' || num === '--') return;
 
@@ -714,10 +756,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             const paddockHorseCount = document.getElementById('paddock-horse-count')?.value || '18';
+            const recommendText = document.getElementById('paddock-recommend-input')?.value || '';
+            const highlighted = [];
+            document.querySelectorAll('#table-paddock-score tbody tr').forEach(tr => {
+                if (tr.children[1].classList.contains('paddock-highlight')) {
+                    highlighted.push(tr.children[0].textContent.trim());
+                }
+            });
 
             blockData.paddock = {
                 horseCount: paddockHorseCount,
-                scores: paddockScores
+                scores: paddockScores,
+                recommendText: recommendText,
+                highlighted: highlighted
             };
         } else if (savedData.races[key]?.paddock) {
             blockData.paddock = savedData.races[key].paddock;
@@ -775,8 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 入力イベント経由の自動保存リスナー
     document.addEventListener('input', (e) => {
-        // レース切り替え用のドロップダウン等での入力時を除く
-        if (e.target.id === 'race-place-1' || e.target.id === 'race-place-2') return;
+        if (e.target.id === 'race-place-1' || e.target.id === 'race-place-2' || e.target.id === 'paddock-recommend-input') return;
         saveCurrentData();
     });
 
@@ -787,7 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ローカルストレージ制御定義
 // ============================================================
 
-const STORAGE_KEY = 'keiba-yosou-data-v7';
+const STORAGE_KEY = 'keiba-yosou-data-v8';
 
 function getTodayString() {
     const today = new Date();
@@ -845,16 +895,19 @@ function loadBlockData(tableId, place, num, textareaId) {
             if (textarea) textarea.value = raceData.importText || '';
 
             if (tableId === 'table-predict-1') {
-                const paddockData = raceData.paddock || { horseCount: '18', scores: {} };
+                const paddockData = raceData.paddock || { horseCount: '18', scores: {}, recommendText: '', highlighted: [] };
                 const count = parseInt(paddockData.horseCount || '18', 10);
-                const event = new CustomEvent('restorePaddock', { detail: { count, scores: paddockData.scores || {} } });
+                
+                const recInput = document.getElementById('paddock-recommend-input');
+                if (recInput) recInput.value = paddockData.recommendText || '';
+
+                const event = new CustomEvent('restorePaddock', { detail: { count, scores: paddockData.scores || {}, highlighted: paddockData.highlighted || [] } });
                 window.dispatchEvent(event);
             }
             return;
         }
     }
 
-    // 該当データが存在しない場合、未入力状態へ初期化
     initBlockDefault(tableId, textareaId);
 }
 
@@ -878,7 +931,10 @@ function initBlockDefault(tableId, textareaId) {
     if (tableId === 'table-predict-1') {
         const select = document.getElementById('paddock-horse-count');
         if (select) select.value = '18';
-        const event = new CustomEvent('restorePaddock', { detail: { count: 18, scores: {} } });
+        const recInput = document.getElementById('paddock-recommend-input');
+        if (recInput) recInput.value = '';
+
+        const event = new CustomEvent('restorePaddock', { detail: { count: 18, scores: {}, highlighted: [] } });
         window.dispatchEvent(event);
     }
 }
@@ -918,6 +974,18 @@ function restoreTable(tableId, rowsData) {
             <td><input type="text" class="input-cell input-mark" data-mark-idx="4" value="${rowData.marks?.[4] || ''}"></td>
         `;
 
+        const kijiSelect = tr.querySelector('.select-kiji');
+        kijiSelect.addEventListener('change', (e) => {
+            if (e.target.value === '有料') {
+                tr.classList.add('row-paid');
+            } else {
+                tr.classList.remove('row-paid');
+            }
+            // 即座に保存処理を呼ぶ
+            const saveEvent = new Event('input');
+            document.dispatchEvent(saveEvent);
+        });
+
         const markInputs = tr.querySelectorAll('.input-mark');
         markInputs.forEach((input, index) => {
             input.addEventListener('keydown', (e) => {
@@ -940,7 +1008,7 @@ function restoreTable(tableId, rowsData) {
 
 // パドック復元イベント
 window.addEventListener('restorePaddock', (e) => {
-    const { count, scores } = e.detail;
+    const { count, scores, highlighted } = e.detail;
     const tbody = document.querySelector('#table-paddock-score tbody');
     if (!tbody) return;
 
@@ -983,9 +1051,12 @@ window.addEventListener('restorePaddock', (e) => {
         const style = FRAME_COLORS[frameNum] || FRAME_COLORS[1];
         const scoreVal = scores[i] !== undefined ? scores[i] : (scores[String(i)] !== undefined ? scores[String(i)] : '');
 
+        const isHighlighted = highlighted.includes(String(i)) || highlighted.includes(i);
+        const highlightClass = isHighlighted ? ' paddock-highlight' : '';
+
         tr.innerHTML = `
             <td style="background-color: ${style.bg}; color: ${style.color}; font-weight: bold; text-align: center;">${i}</td>
-            <td><input type="text" class="input-cell input-paddock-score" data-horse-num="${i}" value="${scoreVal}" placeholder="-"></td>
+            <td class="${highlightClass}"><input type="text" class="input-cell input-paddock-score" data-horse-num="${i}" value="${scoreVal}" placeholder="-"></td>
         `;
         tbody.appendChild(tr);
 
@@ -993,7 +1064,7 @@ window.addEventListener('restorePaddock', (e) => {
         inputs.push(input);
     }
 
-    inputs.forEach((input, index) => {
+    inputs.forEa((input, index) => {
         input.addEventListener('keydown', (evt) => {
             if (evt.key === 'Enter' || evt.key === 'ArrowDown') {
                 evt.preventDefault();

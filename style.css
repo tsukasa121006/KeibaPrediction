@@ -185,7 +185,7 @@ body {
     background: #eef4ed;
 }
 
-/* 選択された状態のスタイル（画像内の緑色スタイルに準拠） */
+/* 選択された状態のスタイル */
 .btn-rnum.active {
     background-color: var(--primary-green) !important;
     color: #ffffff !important;
@@ -499,6 +499,52 @@ body {
 
 .col-paddock-score {
     width: auto;
+}
+
+/* パドック推奨馬エリア */
+.paddock-recommend-card {
+    margin-top: 12px;
+    background: #fafbfc;
+    border: 1px dashed var(--primary-green);
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.paddock-recommend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.paddock-recommend-label {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--primary-green);
+}
+
+.paddock-recommend-input {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    background: #fff;
+    margin-bottom: 6px;
+    text-align: left !important;
+}
+
+.paddock-recommend-input:focus {
+    outline: 2px solid var(--accent-gold);
+}
+
+.paddock-recommend-apply-btn {
+    width: 100%;
+}
+
+/* パドック推奨馬の薄い黄色ハイライト */
+.paddock-highlight {
+    background-color: #fffacd !important;
 }
 
 /* クリア確認モーダル */
