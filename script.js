@@ -90,34 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return 8;
     }
 
-    // パドック点数テーブルの動的生成
-    function updatePaddockTable(totalHorses, savedScores = {}, highlightedHorses = []) {
-        const tbody = document.querySelector('#table-paddock-score tbody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-
-        const inputs = [];
-
-        for (let i = 1; i <= totalHorses; i++) {
-            const tr = document.createElement('tr');
-            const frameNum = getFrameNumber(i, totalHorses);
-            const style = FRAME_COLORS[frameNum] || FRAME_COLORS[1];
-            const scoreVal = savedScores[i] !== undefined ? savedScores[i] : (savedScores[String(i)] !== undefined ? savedScores[String(i)] : '');
-
-            // 推奨馬ハイライト判定
-            const isHighlighted = highlightedHorses.includes(String(i)) || highlightedHorses.includes(i);
-            const highlightClass = isHighlighted ? ' paddock-highlight' : '';
-
-            tr.innerHTML = `
-                <td style="background-color: ${style.bg}; color: ${style.color}; font-weight: bold; text-align: center;">${i}</td>
-                <td class="${highlightClass}"><input type="text" class="input-cell input-paddock-score" data-horse-num="${i}" value="${scoreVal}" placeholder="-"></td>
-            `;
-            tbody.appendChild(tr);
-
-            const input = tr.querySelector('.input-paddock-score');
-            inputs.push(input);
-        }
-
+    // パドック入力欄にキーボード移動（Enter, Tab, 矢印キー）を付与する共通関数
+    function bindPaddockKeyNav(inputs) {
         inputs.forEach((input, index) => {
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === 'ArrowDown') {
@@ -133,6 +107,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+    }
+
+    // パドック点数テーブルの動的生成
+    function updatePaddockTable(totalHorses, savedScores = {}, highlightedHorses = []) {
+        const tbody = document.querySelector('#table-paddock-score tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const inputs = [];
+
+        for (let i = 1; i <= totalHorses; i++) {
+            const tr = document.createElement('tr');
+            const frameNum = getFrameNumber(i, totalHorses);
+            const style = FRAME_COLORS[frameNum] || FRAME_COLORS[1];
+            const scoreVal = savedScores[i] !== undefined ? savedScores[i] : (savedScores[String(i)] !== undefined ? savedScores[String(i)] : '');
+
+            const isHighlighted = highlightedHorses.includes(String(i)) || highlightedHorses.includes(i);
+            const highlightClass = isHighlighted ? ' paddock-highlight' : '';
+
+            tr.innerHTML = `
+                <td style="background-color: ${style.bg}; color: ${style.color}; font-weight: bold; text-align: center;">${i}</td>
+                <td class="${highlightClass}"><input type="text" class="input-cell input-paddock-score" data-horse-num="${i}" value="${scoreVal}" placeholder="-"></td>
+            `;
+            tbody.appendChild(tr);
+
+            const input = tr.querySelector('.input-paddock-score');
+            inputs.push(input);
+        }
+
+        // キー移動イベントを確実にバインド
+        bindPaddockKeyNav(inputs);
     }
 
     // 行生成ヘルパー
@@ -198,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const inputVal = document.getElementById('paddock-recommend-input').value.trim();
         const count = parseInt(document.getElementById('paddock-horse-count').value, 10);
         
-        // 現在入力されている点数を取得
         const currentScores = {};
         document.querySelectorAll('.input-paddock-score').forEach(inp => {
             if (inp.value.trim() !== '') {
@@ -206,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 区切り文字（. または ,）で分割して馬番配列を作成
         const horseNums = inputVal.split(/[.,]/).map(n => n.trim()).filter(n => n !== '');
         
         updatePaddockTable(count, currentScores, horseNums);
@@ -981,7 +984,6 @@ function restoreTable(tableId, rowsData) {
             } else {
                 tr.classList.remove('row-paid');
             }
-            // 即座に保存処理を呼ぶ
             const saveEvent = new Event('input');
             document.dispatchEvent(saveEvent);
         });
@@ -1064,7 +1066,8 @@ window.addEventListener('restorePaddock', (e) => {
         inputs.push(input);
     }
 
-    inputs.forEa((input, index) => {
+    // パドック入力欄にキーボード移動イベントをバインド
+    inputs.forEach((input, index) => {
         input.addEventListener('keydown', (evt) => {
             if (evt.key === 'Enter' || evt.key === 'ArrowDown') {
                 evt.preventDefault();
