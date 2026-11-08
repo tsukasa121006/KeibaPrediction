@@ -1,0 +1,2949 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予想練習</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* 8枠カラー定義 (8枠指定色: #DC6179) */
+        .frame-1-bg { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #d1d5db; }
+        .frame-2-bg { background-color: #262626 !important; color: #ffffff !important; }
+        .frame-3-bg { background-color: #d62828 !important; color: #ffffff !important; }
+        .frame-4-bg { background-color: #2563eb !important; color: #ffffff !important; }
+        .frame-5-bg { background-color: #eab308 !important; color: #ffffff !important; }
+        .frame-6-bg { background-color: #16a34a !important; color: #ffffff !important; }
+        .frame-7-bg { background-color: #ea580c !important; color: #ffffff !important; }
+        .frame-8-bg { background-color: #DC6179 !important; color: #ffffff !important; }
+
+        /* 券種専用カラー */
+        .ticket-tansho { background-color: #4c54a4 !important; color: #ffffff !important; }
+        .ticket-fukusho { background-color: #c04445 !important; color: #ffffff !important; }
+        .ticket-wakuren { background-color: #419b48 !important; color: #ffffff !important; }
+        .ticket-umaren { background-color: #835391 !important; color: #ffffff !important; }
+        .ticket-wide { background-color: #368b98 !important; color: #ffffff !important; }
+        .ticket-umatan { background-color: #e39229 !important; color: #ffffff !important; }
+        .ticket-sanrenfuku { background-color: #3883b5 !important; color: #ffffff !important; }
+        .ticket-sanrentan { background-color: #e36738 !important; color: #ffffff !important; }
+
+        /* 馬1・馬2・馬3 矢印バッジスタイル */
+        .horse-badge-arrow {
+            background-color: #4b5563;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 2px 14px 2px 8px;
+            clip-path: polygon(0% 0%, 85% 0%, 100% 50%, 85% 100%, 0% 100%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 48px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 pb-12">
+<main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- 左側エリア -->
+        <div class="lg:col-span-2 space-y-4">
+            
+            <h1 class="text-xl font-bold text-sky-700">買い目シミュレーション</h1>
+            
+            <!-- レース条件・R番号・頭数・カートボタン -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-500 mb-1">レース場</label>
+                        <select id="race-place" onchange="onRaceConditionChange()" class="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white">
+                            <option value="">--</option>
+                            <option value="東京">東京</option>
+                            <option value="中山">中山</option>
+                            <option value="阪神">阪神</option>
+                            <option value="京都">京都</option>
+                            <option value="中京">中京</option>
+                            <option value="札幌">札幌</option>
+                            <option value="函館">函館</option>
+                            <option value="福島">福島</option>
+                            <option value="新潟">新潟</option>
+                            <option value="小倉">小倉</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- R番号 -->
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-[11px] font-bold text-gray-500 mb-1">R番号</label>
+                    <div id="r-grid" class="grid grid-cols-6 gap-1"></div>
+                </div>
+
+                <!-- 頭数 -->
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-500 mb-1">頭数</label>
+                    <select id="horse-count" onchange="onHorseCountChange()" class="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white"></select>
+                </div>
+
+                <!-- 買い目一覧ボタン -->
+                <div class="flex items-end ml-auto">
+                    <button type="button" onclick="openCartModal()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3.5 py-2 rounded-xl shadow-md flex items-center gap-2 transition active:scale-95 text-xs">
+                        <i class="fa-solid fa-cart-shopping"></i> 買い目一覧 <span id="cart-badge" class="bg-white text-orange-600 px-2 py-0.5 rounded-full text-xs font-black">0点</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 券種選択タブ -->
+            <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-2">
+                <button type="button" onclick="switchTicket('tansho_fukusho')" id="btn-ticket-tansho_fukusho" class="px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm ticket-tansho">単勝・複勝</button>
+                <button type="button" onclick="switchTicket('wakuren')" id="btn-ticket-wakuren" class="px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm bg-white text-gray-700 border-gray-300 hover:bg-gray-50">枠連</button>
+                <button type="button" onclick="switchTicket('umaren')" id="btn-ticket-umaren" class="px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm bg-white text-gray-700 border-gray-300 hover:bg-gray-50">馬連</button>
+                <button type="button" onclick="switchTicket('wide')" id="btn-ticket-wide" class="px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm bg-white text-gray-700 border-gray-300 hover:bg-gray-50">ワイド</button>
+                <button type="button" onclick="switchTicket('umatan')" id="btn-ticket-umatan" class="px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm bg-white text-gray-700 border-gray-300 hover:bg-gray-50">馬単</button>
+                <button type="button" onclick="switchTicket('sanrenfuku')" id="btn-ticket-sanrenfuku" class="px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm bg-white text-gray-700 border-gray-300 hover:bg-gray-50">3連複</button>
+                <button type="button" onclick="switchTicket('sanrentan')" id="btn-ticket-sanrentan" class="px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm bg-white text-gray-700 border-gray-300 hover:bg-gray-50">3連単</button>
+            </div>
+
+            <!-- サブ方式タブ -->
+            <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm">
+                <div id="sub-mode-buttons" class="flex gap-2"></div>
+                <div id="extra-options" class="flex items-center gap-3"></div>
+            </div>
+
+            <!-- 3連単・馬単 ながし指定サブナビ -->
+            <div id="nagashi-subnav-container" class="hidden bg-gray-50 px-4 py-2 rounded-xl border border-gray-200 flex items-center gap-2">
+                <span class="text-xs font-bold text-gray-500 mr-2">軸指定:</span>
+                <div id="nagashi-subnav-buttons" class="flex flex-wrap gap-1.5"></div>
+            </div>
+
+            <!-- 馬選択テーブル & 買い目プレビュー（2カラム） -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- 馬選択テーブル -->
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-center border-collapse">
+                            <thead id="horse-table-head" class="bg-gray-100 text-gray-600 border-b border-gray-200"></thead>
+                            <tbody id="horse-table-body" class="divide-y divide-gray-200"></tbody>
+                            <tfoot id="horse-table-foot" class="border-t border-gray-200 bg-gray-50"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 買い目構築プレビューエリア（スクロール完全解除） -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-gray-200 pb-2 mb-3">
+                            <h3 class="font-bold text-sm text-gray-800">買い目</h3>
+                            <button type="button" onclick="addCurrentToCart()" class="border border-orange-500 text-orange-600 hover:bg-orange-50 font-bold px-3 py-1 rounded-lg text-xs shadow-sm transition active:scale-95 flex items-center gap-1">
+                                + 買い目追加
+                            </button>
+                        </div>
+
+                        <!-- 券種タイトルバー -->
+                        <div id="preview-ticket-header" class="ticket-tansho px-3 py-1.5 rounded-t-lg font-bold text-xs text-white mb-2">
+                            単勝
+                        </div>
+
+                        <!-- 上部：概要表示エリア -->
+                        <div id="preview-parent-badges" class="space-y-1 mb-2"></div>
+
+                        <!-- 展開ボタン -->
+                        <div id="expansion-container" class="hidden border-t border-b border-gray-100 py-1.5 my-2">
+                            <button type="button" id="expansion-btn" onclick="toggleExpansion()" class="w-full py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition flex items-center justify-center gap-1">
+                                展開する <i id="expansion-icon" class="fa-solid fa-chevron-down"></i>
+                            </button>
+                        </div>
+
+                        <!-- 下部：展開表示エリア（自動縦伸び） -->
+                        <div id="preview-combinations-badges" class="hidden space-y-1.5 mb-3 pt-1"></div>
+                    </div>
+
+                    <!-- 下部：金額設定 & 合計計算 -->
+                    <div class="border-t border-gray-200 pt-3 space-y-3">
+                        <div id="global-unit-amount-container" class="hidden" style="display:none">
+                            <span class="text-xs font-bold text-gray-600">各</span>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="adjustUnitAmount(-1)" class="w-7 h-7 bg-white hover:bg-gray-100 text-gray-700 font-bold rounded border border-gray-300 text-xs flex items-center justify-center shadow-sm">-</button>
+                                <div class="flex items-center border border-gray-300 rounded px-2 py-1 bg-white shadow-sm">
+                                    <input type="number" id="input-unit-amount" value="1" min="1" step="1" onchange="setUnitAmount(this.value)" class="w-12 text-right text-xs font-bold focus:outline-none">
+                                    <span class="text-xs text-gray-700 font-bold ml-1">00円</span>
+                                </div>
+                                <button type="button" onclick="adjustUnitAmount(1)" class="w-7 h-7 bg-white hover:bg-gray-100 text-gray-700 font-bold rounded border border-gray-300 text-xs flex items-center justify-center shadow-sm">+</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end px-1 text-right">
+                            <div class="text-right">
+                                <span id="preview-summary-text" class="text-xs font-bold text-gray-800">0点 計 0円</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 右側：収支・結果エリア -->
+        <div class="space-y-6">
+            
+            <!-- 日付フィルター & 収支合計カード -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4">
+                <div class="flex items-center justify-between gap-2">
+                    <select id="date-filter-type" onchange="saveConditionState()" class="border border-gray-300 rounded-lg px-2 py-1 text-xs font-bold text-gray-700 bg-white">
+                        <option value="日別">日別</option>
+                        <option value="月別">月別</option>
+                        <option value="年別">年別</option>
+                    </select>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="shiftDate(-1)" class="w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 flex items-center justify-center"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                        <span id="current-display-date" class="font-bold text-sm text-gray-800"></span>
+                        <button type="button" onclick="shiftDate(1)" class="w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 flex items-center justify-center"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                    </div>
+                </div>
+
+                <div class="text-center py-2 bg-gray-50 rounded-xl border border-gray-100">
+                    <div class="text-xs font-bold text-gray-500 mb-0.5">収支合計</div>
+                    <div id="balance-total-display" class="text-2xl font-black text-gray-800">0 円</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-gray-50 p-2.5 rounded-lg text-center border border-gray-100">
+                        <div class="text-[11px] font-bold text-gray-500">購入</div>
+                        <div id="summary-purchase-display" class="text-sm font-black text-gray-800">0円</div>
+                    </div>
+                    <div class="bg-gray-50 p-2.5 rounded-lg text-center border border-gray-100">
+                        <div class="text-[11px] font-bold text-gray-500">払戻</div>
+                        <div id="summary-payout-display" class="text-sm font-black text-gray-800">0円</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="triggerImport()" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs shadow transition">インポート</button>
+                    <button type="button" onclick="openExportModal()" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs shadow transition">エクスポート</button>
+                    <button type="button" onclick="openHistoryEditor()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow transition">記録編集</button>
+                </div>
+            </div>
+
+            <!-- 結果入力エリア -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
+                <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+                    <h3 class="font-bold text-sm text-sky-700">結果</h3>
+                    <button type="button" onclick="clearCurrentRaceResults()" class="px-3 py-1 border border-red-400 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold transition">クリア</button>
+                </div>
+                
+                <div class="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+                    <table class="w-full text-xs text-center border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700 font-bold border-b border-gray-200">
+                                <th class="py-2 px-2 w-16 border-r border-gray-200">式別</th>
+                                <th class="py-2 px-2 w-24 border-r border-gray-200">馬番/枠番</th>
+                                <th class="py-2 px-2">払戻金 (円)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="result-table-body" class="divide-y divide-gray-200 bg-white"></tbody>
+                    </table>
+                </div>
+
+                <div class="space-y-1.5 pt-2">
+                    <label class="block text-xs font-bold text-gray-600">結果自動入力</label>
+                    <textarea id="ai-result-textarea" rows="6" placeholder="オッズ・払戻テキストをそのまま貼り付けてください..." class="w-full border border-gray-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none font-mono"></textarea>
+                    <button type="button" onclick="parseAiResultText()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-xs shadow transition">自動入力</button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- 買い目展開確認 モーダル -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/70 z-[999] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center space-y-4">
+            <h4 class="font-bold text-base text-gray-800">買い目が展開されますが、よろしいですか？</h4>
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="confirmExpansionOK()" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-sm shadow">OK</button>
+                <button type="button" onclick="confirmExpansionCancel()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 rounded-xl text-sm">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 買い目一覧 モーダル -->
+    <div id="cart-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 border-b border-gray-200 bg-gray-50 shrink-0">
+                <h3 class="font-bold text-base text-gray-800 shrink-0">買い目一覧</h3>
+                <div class="flex items-center justify-end gap-1.5 min-w-0 ml-auto">
+                    <button type="button" onclick="openBatchMode('amount')" class="px-2 py-1.5 border border-sky-600 text-sky-600 hover:bg-sky-50 font-bold rounded-lg text-[10px] sm:text-xs shadow-sm transition whitespace-nowrap">金額一括入力</button>
+                    <button type="button" onclick="openBatchMode('delete')" class="px-2 py-1.5 border border-red-500 text-red-500 hover:bg-red-50 font-bold rounded-lg text-[10px] sm:text-xs shadow-sm transition whitespace-nowrap">一括削除</button>
+                    <button type="button" onclick="closeCartModal()" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold flex items-center justify-center shrink-0"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <div id="cart-modal-items" class="p-4 space-y-4 bg-gray-50 flex-1 min-h-0 overflow-y-auto overscroll-contain"></div>
+
+            <div class="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-between shrink-0">
+                <div id="cart-modal-summary-count" class="font-bold text-sm text-gray-700">0組 0点</div>
+                <div id="cart-modal-summary-cost" class="font-black text-xl text-red-600">合計 0円</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- エクスポート形式選択モーダル -->
+    <div id="export-modal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 space-y-5">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-gray-800">エクスポート</h3>
+                <button type="button" onclick="closeExportModal()" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-sm text-gray-600 text-center">出力形式を選択してください。</p>
+            <div class="flex gap-3">
+                <button type="button" onclick="exportFromModal('json')" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-sm">JSON</button>
+                <button type="button" onclick="exportFromModal('csv')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm">CSV</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 過去の買い目記録編集モーダル -->
+    <div id="history-editor-modal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-3">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+                <div>
+                    <h3 class="font-bold text-base text-gray-800">記録編集</h3>
+                    <p class="text-[11px] text-gray-500 mt-0.5">日付・レース場を選択して買い目を編集できます</p>
+                </div>
+                <button type="button" onclick="closeHistoryEditor()" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 px-5 py-3 border-b border-gray-100 bg-white">
+                <label class="text-xs font-bold text-gray-600">日付
+                    <select id="history-editor-date" onchange="populateHistoryEditorPlaces()" class="mt-1 w-full border border-gray-300 rounded-lg p-2 text-sm bg-white"></select>
+                </label>
+                <label class="text-xs font-bold text-gray-600">レース場
+                    <select id="history-editor-place" onchange="renderHistoryEditor()" class="mt-1 w-full border border-gray-300 rounded-lg p-2 text-sm bg-white"></select>
+                </label>
+            </div>
+            <div id="history-editor-items" class="p-4 overflow-y-auto flex-1 space-y-4 bg-gray-50"></div>
+            <div class="px-5 py-3 border-t border-gray-200 bg-white flex items-center justify-between">
+                <div id="history-editor-summary" class="font-black text-sm text-gray-800">合計 0円</div>
+                <button type="button" onclick="closeHistoryEditor()" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg text-xs">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 一括操作サブモーダル -->
+    <div id="batch-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50">
+                <h4 id="batch-modal-title" class="font-bold text-sm text-gray-800">一括操作</h4>
+                <button type="button" onclick="closeBatchModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="flex items-center justify-between px-5 py-2.5 border-b border-gray-100 bg-white text-xs">
+                <span class="font-bold text-gray-600">全選択・全解除</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="batch-toggle-all" checked onchange="toggleBatchAll(this.checked)" class="sr-only peer">
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600"></div>
+                </label>
+            </div>
+
+            <div id="batch-amount-input-container" class="px-5 py-2 bg-sky-50 border-b border-sky-100 flex items-center justify-between text-xs font-bold text-sky-800">
+                <span>一括適用金額:</span>
+                <div class="flex items-center border border-sky-300 rounded px-2 py-1 bg-white">
+                    <input type="number" id="batch-input-amount" value="1" min="1" step="1" class="w-12 text-right text-xs font-bold focus:outline-none">
+                    <span class="text-xs text-gray-700 ml-1">00円</span>
+                </div>
+            </div>
+
+            <div id="batch-modal-items" class="p-4 overflow-y-auto flex-1 space-y-2 bg-gray-50"></div>
+
+            <div class="px-5 py-3 border-t border-gray-200 bg-white flex justify-end gap-2">
+                <button type="button" onclick="closeBatchModal()" class="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg text-xs">キャンセル</button>
+                <button type="button" id="batch-submit-btn" onclick="executeBatchAction()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg text-xs shadow">実行</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="import-file-input" onchange="handleImportFile(event)" class="hidden" accept=".json,.csv,application/json,text/csv">
+
+    <script>
+        // 8枠カラー定義 (8枠指定色: #DC6179)
+        const FRAME_COLORS = [
+            { bg: "frame-1-bg" },
+            { bg: "frame-2-bg" },
+            { bg: "frame-3-bg" },
+            { bg: "frame-4-bg" },
+            { bg: "frame-5-bg" },
+            { bg: "frame-6-bg" },
+            { bg: "frame-7-bg" },
+            { bg: "frame-8-bg" }
+        ];
+
+        // 券種カラーマスター
+        const TICKET_COLORS = {
+            tansho: { bg: "ticket-tansho", text: "単勝" },
+            fukusho: { bg: "ticket-fukusho", text: "複勝" },
+            wakuren: { bg: "ticket-wakuren", text: "枠連" },
+            umaren: { bg: "ticket-umaren", text: "馬連" },
+            wide: { bg: "ticket-wide", text: "ワイド" },
+            umatan: { bg: "ticket-umatan", text: "馬単" },
+            sanrenfuku: { bg: "ticket-sanrenfuku", text: "3連複" },
+            sanrentan: { bg: "ticket-sanrentan", text: "3連単" }
+        };
+
+        // アプリケーション状態
+        let APP_STATE = {
+            currentDate: new Date().toISOString().split('T')[0],
+            dateFilterType: "日別",
+            racePlace: "",
+            raceNumber: 1,
+            horseCount: 18,
+            raceHorseCounts: {},
+            currentTicket: "tansho_fukusho",
+            singleType: "tansho",
+            subMode: "formation",
+            nagashiTarget: "1着",
+            isMulti: false,
+            selection: {
+                singleSelected: [],
+                boxSelected: [],
+                axis: null,
+                axis2: null,
+                opponents: [],
+                pos1: [],
+                pos2: [],
+                pos3: []
+            },
+            singleCustomAmounts: {},
+            unitAmounts: {}, 
+            isExpanded: false,
+            isFullyDecomposed: false,
+            expandedItems: [],
+            cart: [],
+            raceResults: {},
+            results: {
+                tansho: { horse: "", payout: "" },
+                fukusho: { horses: ["", "", ""], payouts: ["", "", ""] },
+                wakuren: { combo: "", payout: "" },
+                umaren: { combo: "", payout: "" },
+                wide: { combos: ["", "", ""], payouts: ["", "", ""] },
+                umatan: { combo: "", payout: "" },
+                sanrenfuku: { combo: "", payout: "" },
+                sanrentan: { combo: "", payout: "" }
+            }
+        };
+
+        let currentBatchMode = null;
+        let pendingIndividualAction = null;
+        let pendingCartAction = null;
+
+        /**
+         * JRAの枠番割り当て
+         */
+        function getFrameNumber(horseNum, total) {
+            const h = Number.parseInt(horseNum, 10);
+            const t = Number.parseInt(total, 10);
+
+            if (!Number.isInteger(h) || !Number.isInteger(t) ||
+                h < 1 || h > t || t < 1 || t > 18) {
+                return null;
+            }
+
+            const frameSizes = [];
+
+            if (t <= 8) {
+                for (let frame = 1; frame <= t; frame++) {
+                    frameSizes.push(1);
+                }
+            } else if (t <= 15) {
+                const oneHorseFrames = 16 - t;
+
+                for (let frame = 1; frame <= 8; frame++) {
+                    frameSizes.push(frame <= oneHorseFrames ? 1 : 2);
+                }
+            } else if (t === 16) {
+                frameSizes.push(2, 2, 2, 2, 2, 2, 2, 2);
+            } else if (t === 17) {
+                frameSizes.push(2, 2, 2, 2, 2, 2, 2, 3);
+            } else {
+                frameSizes.push(2, 2, 2, 2, 2, 2, 3, 3);
+            }
+
+            let lastHorseNumber = 0;
+
+            for (let frame = 0; frame < frameSizes.length; frame++) {
+                lastHorseNumber += frameSizes[frame];
+
+                if (h <= lastHorseNumber) {
+                    return frame + 1;
+                }
+            }
+
+            return null;
+        }
+
+        function getActiveFrames(total) {
+            const count = parseInt(total);
+            const maxFrame = count <= 8 ? count : 8;
+            const frames = [];
+            for(let f=1; f<=maxFrame; f++) frames.push(f);
+            return frames;
+        }
+
+        let HISTORY_RECORDS = [];
+        const HISTORY_DB_NAME = 'keiba_bet_history_db';
+        const HISTORY_DB_VERSION = 1;
+
+        function openHistoryDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(HISTORY_DB_NAME, HISTORY_DB_VERSION);
+                request.onupgradeneeded = () => {
+                    const db = request.result;
+                    if (!db.objectStoreNames.contains('races')) db.createObjectStore('races', { keyPath: 'key' });
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function raceKey(date, place, rNum) {
+            return `${date}|${place}|${rNum}`;
+        }
+
+        function cloneData(value) {
+            return JSON.parse(JSON.stringify(value));
+        }
+
+        async function getAllHistoryRecords() {
+            const db = await openHistoryDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('races', 'readonly');
+                const req = tx.objectStore('races').getAll();
+                req.onsuccess = () => { db.close(); resolve(req.result || []); };
+                req.onerror = () => { db.close(); reject(req.error); };
+            });
+        }
+
+        async function putHistoryRecord(record) {
+            const db = await openHistoryDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('races', 'readwrite');
+                tx.objectStore('races').put(record);
+                tx.oncomplete = () => { db.close(); resolve(); };
+                tx.onerror = () => { db.close(); reject(tx.error); };
+            });
+        }
+
+        function getActiveRaceKey(date = APP_STATE.currentDate, place = APP_STATE.racePlace || document.getElementById('race-place')?.value || '', rNum = APP_STATE.raceNumber) {
+            return raceKey(date, place, rNum);
+        }
+
+        function saveActiveHorseCount() {
+            APP_STATE.raceHorseCounts = APP_STATE.raceHorseCounts || {};
+            const place = APP_STATE.racePlace || document.getElementById('race-place')?.value || '';
+            if (!place) return;
+            APP_STATE.raceHorseCounts[getActiveRaceKey(APP_STATE.currentDate, place, APP_STATE.raceNumber)] = Number(APP_STATE.horseCount) || 18;
+        }
+
+        function loadActiveHorseCount() {
+            APP_STATE.raceHorseCounts = APP_STATE.raceHorseCounts || {};
+            const key = getActiveRaceKey();
+            const historyRecord = HISTORY_RECORDS.find(r => r.key === key);
+            // 買い目データに保存された頭数を最優先し、旧版で誤ったキーに保存された値を拾わないようにする
+            const cartSaved = Number(APP_STATE.cart?.find(item => item.date === APP_STATE.currentDate && item.place === (APP_STATE.racePlace || document.getElementById('race-place')?.value || '') && Number(item.rNum) === Number(APP_STATE.raceNumber) && Number(item.horseCount))?.horseCount);
+            const localSaved = Number(APP_STATE.raceHorseCounts[key]);
+            const historySaved = Number(historyRecord?.horseCount) || Number(historyRecord?.cart?.find(x => Number(x.horseCount))?.horseCount);
+            const candidates = [cartSaved, localSaved, historySaved];
+            const saved = candidates.find(value => Number.isInteger(value) && value >= 5 && value <= 18) || 18;
+            APP_STATE.horseCount = saved;
+            const select = document.getElementById('horse-count');
+            if (select) select.value = String(saved);
+        }
+
+        function getCurrentRaceResults() {
+            const place = document.getElementById('race-place')?.value || APP_STATE.racePlace || '';
+            const key = raceKey(APP_STATE.currentDate, place, APP_STATE.raceNumber);
+            const saved = APP_STATE.raceResults?.[key] || HISTORY_RECORDS.find(r => r.key === key)?.results;
+            return saved ? saved : { tansho: { horse: '', payout: '' }, fukusho: { horses: ['', '', ''], payouts: ['', '', ''] }, wakuren: { combo: '', payout: '' }, umaren: { combo: '', payout: '' }, wide: { combos: ['', '', ''], payouts: ['', '', ''] }, umatan: { combo: '', payout: '' }, sanrenfuku: { combo: '', payout: '' }, sanrentan: { combo: '', payout: '' } };
+        }
+
+        function setCurrentRaceResults(results) {
+            const place = document.getElementById('race-place')?.value || APP_STATE.racePlace || '';
+            const key = raceKey(APP_STATE.currentDate, place, APP_STATE.raceNumber);
+            APP_STATE.raceResults = APP_STATE.raceResults || {};
+            APP_STATE.raceResults[key] = cloneData(results);
+            APP_STATE.results = cloneData(results);
+        }
+
+        // レース単位の保存データを生成。金額は円単位で保持する。
+        function buildRaceFinancials(record) {
+            const bets = [];
+            (record.cart || []).forEach(group => {
+                (group.combos || []).forEach((combo, idx) => {
+                    const units = Math.max(1, Number(group.items?.[idx]?.amount) || 1);
+                    bets.push({
+                        groupId: group.id,
+                        ticket: group.ticket,
+                        combo: cloneData(combo),
+                        amount: units * 100
+                    });
+                });
+            });
+            const totalPurchase = bets.reduce((sum, bet) => sum + bet.amount, 0);
+            const totalPayout = calculateRacePayout(record);
+            return { bets, totalPurchase, totalPayout, balance: totalPayout - totalPurchase };
+        }
+
+        async function archiveState(state) {
+            if (!state || !Array.isArray(state.cart)) return;
+            const grouped = new Map();
+            state.cart.forEach(item => {
+                const key = raceKey(item.date, item.place, item.rNum);
+                if (!grouped.has(key)) grouped.set(key, { key, date: item.date, place: item.place, rNum: item.rNum, horseCount: Number(state.raceHorseCounts?.[key]) || Number(item.horseCount) || null, cart: [], results: null });
+                if (!grouped.get(key).horseCount && Number(item.horseCount)) grouped.get(key).horseCount = Number(item.horseCount);
+                grouped.get(key).cart.push(item);
+            });
+            const raceResults = state.raceResults || {};
+            for (const [key, results] of Object.entries(raceResults)) {
+                if (!grouped.has(key)) {
+                    const [date, place, rNum] = key.split('|');
+                    grouped.set(key, { key, date, place, rNum: Number(rNum), horseCount: Number(state.raceHorseCounts?.[key]) || Number(state.horseCount) || null, cart: [], results: cloneData(results) });
+                } else grouped.get(key).results = cloneData(results);
+            }
+            const activePlace = state.racePlace || document.getElementById('race-place')?.value || '';
+            const activeKey = raceKey(state.currentDate, activePlace, state.raceNumber);
+            if (!grouped.has(activeKey)) grouped.set(activeKey, { key: activeKey, date: state.currentDate, place: activePlace, rNum: state.raceNumber, horseCount: Number(state.raceHorseCounts?.[activeKey]) || Number(state.horseCount) || null, cart: [], results: cloneData(state.results) });
+            else {
+                grouped.get(activeKey).results = cloneData(state.results);
+                if (!grouped.get(activeKey).horseCount && Number(state.horseCount)) grouped.get(activeKey).horseCount = Number(state.horseCount);
+            }
+
+            for (const record of grouped.values()) {
+                if (Number(state.raceHorseCounts?.[record.key])) record.horseCount = Number(state.raceHorseCounts[record.key]);
+                const old = HISTORY_RECORDS.find(r => r.key === record.key);
+                if (old) {
+                    if (!Number(record.horseCount)) record.horseCount = Number(old.horseCount) || Number(old.cart?.find(x => Number(x.horseCount))?.horseCount) || null;
+                    // localStorage側のcartは現在の作業状態そのもの。
+                    // 削除済みグループをIndexedDBから復活させないよう、同一レースは置き換える。
+                    record.cart = cloneData(record.cart || []);
+                    if (!record.results) record.results = old.results || null;
+                }
+                if (!Number(record.horseCount)) {
+                    record.horseCount = Number(record.cart?.find(x => Number(x.horseCount))?.horseCount) || null;
+                }
+                const financials = buildRaceFinancials(record);
+                record.bets = financials.bets;
+                record.totalPurchase = financials.totalPurchase;
+                record.totalPayout = financials.totalPayout;
+                record.balance = financials.balance;
+                await putHistoryRecord(record);
+            }
+            HISTORY_RECORDS = await getAllHistoryRecords();
+        }
+
+        window.onload = async function () {
+            await loadFromLocalStorage();
+            initHorseCountDropdown();
+            initRaceNumberGrid();
+            renderSubModeButtons();
+            renderHorseTable();
+            renderResultTable();
+            updateCartBadge();
+            updateCombinationsMath();
+            await calculateSummary();
+        };
+
+        async function loadFromLocalStorage() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const savedDate = localStorage.getItem('sim_last_date');
+            const savedState = localStorage.getItem('sim_app_state');
+            HISTORY_RECORDS = await getAllHistoryRecords().catch(() => []);
+
+            // 0:00をまたいだ場合も、削除前に履歴DBへ退避してからlocalStorageを初期化
+            if (savedDate !== todayStr) {
+                if (savedState) {
+                    try { await archiveState(JSON.parse(savedState)); }
+                    catch (e) {
+                        console.error('日次履歴の退避に失敗:', e);
+                        alert('過去データを履歴DBに保存できなかったため、localStorageの自動削除を今回は中止しました。');
+                        return;
+                    }
+                }
+                localStorage.clear();
+                localStorage.setItem('sim_last_date', todayStr);
+            } else if (savedState) {
+                try {
+                    const parsed = JSON.parse(savedState);
+                    APP_STATE = { ...APP_STATE, ...parsed, raceResults: parsed.raceResults || {}, raceHorseCounts: parsed.raceHorseCounts || {} };
+                } catch(e) { console.error('保存データの読み込みに失敗:', e); }
+            }
+
+            HISTORY_RECORDS = await getAllHistoryRecords().catch(() => []);
+            const place = document.getElementById('race-place');
+            if (place) place.value = APP_STATE.racePlace;
+            document.getElementById('date-filter-type').value = APP_STATE.dateFilterType;
+            document.getElementById('current-display-date').innerText = formatDisplayDate(APP_STATE.currentDate, APP_STATE.dateFilterType);
+            loadActiveHorseCount();
+            saveActiveHorseCount();
+            APP_STATE.results = cloneData(getCurrentRaceResults());
+        }
+
+        let archiveWriteQueue = Promise.resolve();
+
+        function saveToLocalStorage() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem('sim_last_date', todayStr);
+            localStorage.setItem('sim_app_state', JSON.stringify(APP_STATE));
+            // 操作が短時間に連続しても、古い非同期保存が新しい状態を上書きしないよう直列化する。
+            const snapshot = cloneData(APP_STATE);
+            archiveWriteQueue = archiveWriteQueue
+                .catch(() => {})
+                .then(() => archiveState(snapshot))
+                .then(() => calculateSummary())
+                .catch(err => console.error('履歴保存エラー:', err));
+            return archiveWriteQueue;
+        }
+
+        function saveConditionState() {
+            APP_STATE.racePlace = document.getElementById('race-place').value;
+            APP_STATE.dateFilterType = document.getElementById('date-filter-type').value;
+            document.getElementById('current-display-date').innerText = formatDisplayDate(APP_STATE.currentDate, APP_STATE.dateFilterType);
+            saveToLocalStorage();
+        }
+
+        function onRaceConditionChange() {
+            // 競馬場変更時はracePlace更新前のキーで保存済みの状態を維持し、新しいレースの頭数を読み込む
+            resetCurrentSelectionToDefault();
+            APP_STATE.racePlace = document.getElementById('race-place').value;
+            loadActiveHorseCount();
+            renderHorseTable();
+            APP_STATE.results = cloneData(getCurrentRaceResults());
+            renderResultTable();
+            // 切替後の日付・レース場・R番号に対応する買い目点数へ更新
+            updateCartBadge();
+            saveConditionState();
+        }
+
+        function resetCurrentSelectionToDefault() {
+            clearSelections();
+            APP_STATE.currentTicket = "tansho_fukusho";
+            APP_STATE.singleType = "tansho";
+            APP_STATE.subMode = "formation";
+            APP_STATE.isExpanded = false;
+            APP_STATE.isFullyDecomposed = false;
+            switchTicket('tansho_fukusho');
+        }
+
+        function formatDisplayDate(dateStr, type) {
+            const d = new Date(dateStr);
+            const y = d.getFullYear();
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            const w = days[d.getDay()];
+
+            if (type === '月別') return `${y}年${m}月`;
+            if (type === '年別') return `${y}年`;
+            return `${y}年${String(m).padStart(2,'0')}月${String(day).padStart(2,'0')}日(${w})`;
+        }
+
+        function shiftDate(diff) {
+            saveActiveHorseCount();
+            const d = new Date(APP_STATE.currentDate);
+            const type = APP_STATE.dateFilterType;
+            if (type === '月別') d.setMonth(d.getMonth() + diff);
+            else if (type === '年別') d.setFullYear(d.getFullYear() + diff);
+            else d.setDate(d.getDate() + diff);
+
+            APP_STATE.currentDate = d.toISOString().split('T')[0];
+            loadActiveHorseCount();
+            APP_STATE.results = cloneData(getCurrentRaceResults());
+            document.getElementById('current-display-date').innerText = formatDisplayDate(APP_STATE.currentDate, type);
+            renderResultTable();
+            // 日付変更後のレース条件に対応する買い目点数へ更新
+            updateCartBadge();
+            saveToLocalStorage();
+        }
+
+        function initHorseCountDropdown() {
+            const select = document.getElementById('horse-count');
+            select.innerHTML = '';
+            for (let i = 5; i <= 18; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${i}頭`;
+                if (i === APP_STATE.horseCount) opt.selected = true;
+                select.appendChild(opt);
+            }
+        }
+
+        function onHorseCountChange() {
+            APP_STATE.horseCount = parseInt(document.getElementById('horse-count').value);
+            saveActiveHorseCount();
+            clearSelections();
+            saveToLocalStorage();
+            renderHorseTable();
+        }
+
+        function initRaceNumberGrid() {
+            const grid = document.getElementById('r-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `py-1.5 rounded-lg text-xs font-bold border transition ${APP_STATE.raceNumber === i ? 'bg-sky-600 text-white border-sky-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`;
+                btn.textContent = `${i}R`;
+                btn.onclick = () => {
+                    if (APP_STATE.raceNumber !== i) {
+                        saveActiveHorseCount();
+                        APP_STATE.raceNumber = i;
+                        onRaceConditionChange();
+                        initRaceNumberGrid();
+                    }
+                };
+                grid.appendChild(btn);
+            }
+        }
+
+        function switchTicket(ticketKey) {
+            APP_STATE.currentTicket = ticketKey;
+            APP_STATE.isMulti = false;
+            APP_STATE.nagashiTarget = "1着";
+            APP_STATE.isExpanded = false;
+            APP_STATE.isFullyDecomposed = false;
+            clearSelections();
+
+            ['tansho_fukusho', 'wakuren', 'umaren', 'wide', 'umatan', 'sanrenfuku', 'sanrentan'].forEach(k => {
+                const btn = document.getElementById(`btn-ticket-${k}`);
+                const colorKey = k === 'tansho_fukusho' ? APP_STATE.singleType : k;
+                const activeColorClass = TICKET_COLORS[colorKey]?.bg || 'bg-sky-600';
+                
+                if (k === ticketKey) {
+                    btn.className = `px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm ${activeColorClass} text-white`;
+                } else {
+                    btn.className = "px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm bg-white text-gray-700 border-gray-300 hover:bg-gray-50";
+                }
+            });
+
+            renderSubModeButtons();
+            renderHorseTable();
+            updateCombinationsMath();
+        }
+
+        function renderSubModeButtons() {
+            const container = document.getElementById('sub-mode-buttons');
+            const extra = document.getElementById('extra-options');
+            const nagashiSubnav = document.getElementById('nagashi-subnav-container');
+            container.innerHTML = '';
+            extra.innerHTML = '';
+            nagashiSubnav.classList.add('hidden');
+
+            const ticket = APP_STATE.currentTicket;
+
+            if (ticket === "tansho_fukusho") {
+                container.innerHTML = `
+                    <button type="button" onclick="switchSingleType('tansho')" class="px-3 py-1.5 rounded-md font-bold text-xs border ${APP_STATE.singleType === 'tansho' ? 'ticket-tansho' : 'bg-gray-100 text-gray-600 border-gray-300'}">単勝</button>
+                    <button type="button" onclick="switchSingleType('fukusho')" class="px-3 py-1.5 rounded-md font-bold text-xs border ${APP_STATE.singleType === 'fukusho' ? 'ticket-fukusho' : 'bg-gray-100 text-gray-600 border-gray-300'}">複勝</button>
+                `;
+            } else if (ticket === "wakuren") {
+                container.innerHTML = `
+                    <button type="button" onclick="switchSubMode('formation')" class="px-3 py-1.5 rounded-md font-bold text-xs border ${APP_STATE.subMode === 'formation' ? 'bg-sky-600 text-white border-sky-600' : 'bg-gray-100 text-gray-600 border-gray-300'}">通常・フォーメーション</button>
+                    <button type="button" onclick="switchSubMode('box')" class="px-3 py-1.5 rounded-md font-bold text-xs border ${APP_STATE.subMode === 'box' ? 'bg-sky-600 text-white border-sky-600' : 'bg-gray-100 text-gray-600 border-gray-300'}">ボックス</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button type="button" onclick="switchSubMode('formation')" class="px-3 py-1.5 rounded-md font-bold text-xs border ${APP_STATE.subMode === 'formation' ? 'bg-sky-600 text-white border-sky-600' : 'bg-gray-100 text-gray-600 border-gray-300'}">通常・フォーメーション</button>
+                    <button type="button" onclick="switchSubMode('box')" class="px-3 py-1.5 rounded-md font-bold text-xs border ${APP_STATE.subMode === 'box' ? 'bg-sky-600 text-white border-sky-600' : 'bg-gray-100 text-gray-600 border-gray-300'}">ボックス</button>
+                    <button type="button" onclick="switchSubMode('nagashi')" class="px-3 py-1.5 rounded-md font-bold text-xs border ${APP_STATE.subMode === 'nagashi' ? 'bg-sky-600 text-white border-sky-600' : 'bg-gray-100 text-gray-600 border-gray-300'}">ながし</button>
+                `;
+
+                if ((ticket === "umatan" || ticket === "sanrentan") && APP_STATE.subMode !== 'box') {
+                    extra.innerHTML = `
+                        <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-gray-700">
+                            <input type="checkbox" id="multi-checkbox" ${APP_STATE.isMulti ? 'checked' : ''} onchange="toggleMulti(this.checked)" class="w-4 h-4 text-sky-600 rounded"> マルチ
+                        </label>
+                    `;
+                }
+
+                if (APP_STATE.subMode === 'nagashi' && (ticket === "umatan" || ticket === "sanrentan")) {
+                    nagashiSubnav.classList.remove('hidden');
+                    renderSanrentanNagashiSubnav();
+                }
+            }
+        }
+
+        function switchSingleType(type) {
+            APP_STATE.singleType = type;
+            const btn = document.getElementById('btn-ticket-tansho_fukusho');
+            if (btn) btn.className = `px-4 py-2 rounded-lg font-bold text-sm border transition shadow-sm ${TICKET_COLORS[type].bg}`;
+            renderSubModeButtons();
+            renderHorseTable();
+            updateCombinationsMath();
+        }
+
+        function switchSubMode(mode) {
+            APP_STATE.subMode = mode;
+            APP_STATE.selection.axis2 = null;
+            APP_STATE.isExpanded = false;
+            APP_STATE.isFullyDecomposed = false;
+            renderSubModeButtons();
+            renderHorseTable();
+            updateCombinationsMath();
+        }
+
+        function toggleMulti(val) {
+            APP_STATE.isMulti = val;
+            updateCombinationsMath();
+        }
+
+        function renderSanrentanNagashiSubnav() {
+            const container = document.getElementById('nagashi-subnav-buttons');
+            container.innerHTML = '';
+            const targets = APP_STATE.currentTicket === "umatan"
+                ? ["1着", "2着"]
+                : ["1着", "2着", "3着", "1・2着", "1・3着", "2・3着"];
+            targets.forEach(t => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `px-2.5 py-1 rounded text-xs font-bold border transition ${APP_STATE.nagashiTarget === t ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`;
+                btn.textContent = t;
+                btn.onclick = () => {
+                    APP_STATE.nagashiTarget = t;
+                    APP_STATE.selection.axis2 = null;
+                    renderSanrentanNagashiSubnav();
+                    renderHorseTable();
+                    updateCombinationsMath();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function clearSelections() {
+            APP_STATE.selection = {
+                singleSelected: [],
+                boxSelected: [],
+                axis: null,
+                axis2: null,
+                opponents: [],
+                pos1: [],
+                pos2: [],
+                pos3: []
+            };
+            APP_STATE.isFullyDecomposed = false;
+        }
+
+        /**
+         * 馬選択テーブル描画処理（枠結合の完全修復）
+         */
+        function renderHorseTable() {
+            const head = document.getElementById('horse-table-head');
+            const body = document.getElementById('horse-table-body');
+            const foot = document.getElementById('horse-table-foot');
+            head.innerHTML = '';
+            body.innerHTML = '';
+            foot.innerHTML = '';
+
+            const ticket = APP_STATE.currentTicket;
+            const sub = APP_STATE.subMode;
+            const count = parseInt(APP_STATE.horseCount);
+
+            if (ticket === "wakuren") {
+                head.innerHTML = `<tr><th class="py-1.5 px-1 w-10 border-r border-gray-200">枠</th><th class="py-1.5 px-1 w-12 border-r border-gray-200">馬番</th><th class="py-1.5 px-1 border-r border-gray-200">枠1</th><th class="py-1.5 px-1">枠2</th></tr>`;
+                const activeFrames = getActiveFrames(count);
+
+                activeFrames.forEach(fNum => {
+                    const horsesInFrame = [];
+                    for (let i = 1; i <= count; i++) {
+                        if (getFrameNumber(i, count) === fNum) horsesInFrame.push(i);
+                    }
+
+                    horsesInFrame.forEach((hNum, idx) => {
+                        const tr = document.createElement('tr');
+                        let html = '';
+                        const frameStyle = FRAME_COLORS[fNum - 1] || FRAME_COLORS[0];
+
+                        if (idx === 0) {
+                            html += `<td rowspan="${horsesInFrame.length}" class="${frameStyle.bg} font-bold py-1.5 px-1 border-r border-gray-200 align-middle text-center">${fNum}</td>`;
+                        }
+                        html += `<td class="font-bold py-1.5 px-1 text-gray-700 border-r border-gray-200 text-center">${hNum}</td>`;
+
+                        if (idx === 0) {
+                            const chk1 = APP_STATE.selection.pos1.includes(fNum);
+                            const chk2 = APP_STATE.selection.pos2.includes(fNum);
+                            html += `<td rowspan="${horsesInFrame.length}" class="py-1.5 px-1 border-r border-gray-200 align-middle text-center cursor-pointer" onclick="handleCellClick(event, 'pos1', ${fNum})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk1 ? 'checked' : ''}></td>`;
+                            html += `<td rowspan="${horsesInFrame.length}" class="py-1.5 px-1 align-middle text-center cursor-pointer" onclick="handleCellClick(event, 'pos2', ${fNum})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk2 ? 'checked' : ''}></td>`;
+                        }
+                        tr.innerHTML = html;
+                        body.appendChild(tr);
+                    });
+                });
+
+                foot.innerHTML = `<tr>
+                    <td colspan="2" class="py-1.5 px-1 text-gray-500 font-bold bg-gray-100 text-[11px] align-middle border-r border-gray-200 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <span class="text-gray-600 font-semibold py-0.5">全選択</span>
+                            <hr class="w-full border-t border-gray-300 my-0.5">
+                            <span class="text-gray-400 font-semibold py-0.5">全解除</span>
+                        </div>
+                    </td>
+                    <td class="py-1.5 px-1 align-middle border-r border-gray-200 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <button type="button" onclick="toggleColumnAll('pos1', true)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-sky-50 text-sky-600 font-bold text-[11px] flex items-center justify-center shadow-sm">全</button>
+                            <hr class="w-full border-t border-gray-300 my-0.5">
+                            <button type="button" onclick="toggleColumnAll('pos1', false)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-500 font-bold text-[11px] flex items-center justify-center shadow-sm">消</button>
+                        </div>
+                    </td>
+                    <td class="py-1.5 px-1 align-middle text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <button type="button" onclick="toggleColumnAll('pos2', true)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-sky-50 text-sky-600 font-bold text-[11px] flex items-center justify-center shadow-sm">全</button>
+                            <hr class="w-full border-t border-gray-300 my-0.5">
+                            <button type="button" onclick="toggleColumnAll('pos2', false)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-500 font-bold text-[11px] flex items-center justify-center shadow-sm">消</button>
+                        </div>
+                    </td>
+                </tr>`;
+                return;
+            }
+
+            let headRow = `<tr><th class="py-1.5 px-1 w-10 border-r border-gray-200">枠</th><th class="py-1.5 px-1 w-12 border-r border-gray-200">馬番</th>`;
+
+            if (ticket === "tansho_fukusho" || sub === "box") {
+                headRow += `<th class="py-1.5 px-1">選択</th></tr>`;
+            } else if (sub === "nagashi") {
+                const target = APP_STATE.nagashiTarget;
+                if (target === "1・2着" || target === "1・3着" || target === "2・3着") {
+                    const labels = target.split('・');
+                    headRow += `<th class="py-1.5 px-1 w-20 border-r border-gray-200">${labels[0]}軸</th><th class="py-1.5 px-1 w-20 border-r border-gray-200">${labels[1]}軸</th><th class="py-1.5 px-1 w-20">相手</th></tr>`;
+                } else {
+                    const axisLabel = target ? `${target}軸` : '軸';
+                    headRow += `<th class="py-1.5 px-1 w-24 border-r border-gray-200">${axisLabel}</th><th class="py-1.5 px-1 w-24">相手</th></tr>`;
+                }
+            } else {
+                if (ticket === "umaren" || ticket === "wide" || ticket === "umatan") {
+                    headRow += `<th class="py-1.5 px-1 border-r border-gray-200">1頭目</th><th class="py-1.5 px-1">2頭目</th></tr>`;
+                } else {
+                    headRow += `<th class="py-1.5 px-1 border-r border-gray-200">1頭目</th><th class="py-1.5 px-1 border-r border-gray-200">2頭目</th><th class="py-1.5 px-1">3頭目</th></tr>`;
+                }
+            }
+            head.innerHTML = headRow;
+
+            // 馬番ごとのテーブル出力（枠ごとにrowspanで結合）
+            for (let i = 1; i <= count; i++) {
+                const frameNum = getFrameNumber(i, count);
+                const frameStyle = FRAME_COLORS[frameNum - 1] || FRAME_COLORS[0];
+
+                let tr = document.createElement('tr');
+                let html = '';
+
+                // その枠の最初の馬番の場合のみ 枠番セル（rowspan付き）を作成
+                const isFirstOfFrame = (i === 1) || (getFrameNumber(i - 1, count) !== frameNum);
+                if (isFirstOfFrame) {
+                    let rowspan = 1;
+                    for (let j = i + 1; j <= count; j++) {
+                        if (getFrameNumber(j, count) === frameNum) rowspan++;
+                        else break;
+                    }
+                    html += `<td rowspan="${rowspan}" class="${frameStyle.bg} font-bold py-1.5 px-1 border-r border-gray-200 align-middle text-center">${frameNum}</td>`;
+                }
+
+                html += `<td class="font-bold py-1.5 px-1 text-gray-700 border-r border-gray-200 text-center">${i}</td>`;
+
+                if (ticket === "tansho_fukusho") {
+                    const isChecked = APP_STATE.selection.singleSelected.includes(i);
+                    html += `<td class="py-1.5 px-1 cursor-pointer border-r border-gray-200 text-center" onclick="handleCellClick(event, 'boxSingle', ${i})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${isChecked ? 'checked' : ''}></td>`;
+                } else if (sub === "box") {
+                    const isChecked = APP_STATE.selection.boxSelected.includes(i);
+                    html += `<td class="py-1.5 px-1 cursor-pointer border-r border-gray-200 text-center" onclick="handleCellClick(event, 'boxSingle', ${i})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${isChecked ? 'checked' : ''}></td>`;
+                } else if (sub === "nagashi") {
+                    const target = APP_STATE.nagashiTarget;
+                    const isAxis1 = APP_STATE.selection.axis === i;
+                    const isOpponent = APP_STATE.selection.opponents.includes(i);
+
+                    if (target === "1・2着" || target === "1・3着" || target === "2・3着") {
+                        const isAxis2 = APP_STATE.selection.axis2 === i;
+                        html += `<td class="py-1.5 px-1 border-r border-gray-200 cursor-pointer text-center" onclick="handleCellClick(event, 'axis1', ${i})"><input type="radio" name="nagashi-axis-1" class="w-4 h-4 text-sky-500 focus:ring-sky-400 pointer-events-none" ${isAxis1 ? 'checked' : ''}></td>`;
+                        html += `<td class="py-1.5 px-1 border-r border-gray-200 cursor-pointer text-center" onclick="handleCellClick(event, 'axis2', ${i})"><input type="radio" name="nagashi-axis-2" class="w-4 h-4 text-sky-500 focus:ring-sky-400 pointer-events-none" ${isAxis2 ? 'checked' : ''}></td>`;
+                    } else {
+                        html += `<td class="py-1.5 px-1 border-r border-gray-200 cursor-pointer text-center" onclick="handleCellClick(event, 'axis1', ${i})"><input type="radio" name="nagashi-axis-1" class="w-4 h-4 text-sky-500 focus:ring-sky-400 pointer-events-none" ${isAxis1 ? 'checked' : ''}></td>`;
+                    }
+                    html += `<td class="py-1.5 px-1 cursor-pointer text-center" onclick="handleCellClick(event, 'opponent', ${i})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${isOpponent ? 'checked' : ''}></td>`;
+                } else {
+                    const chk1 = APP_STATE.selection.pos1.includes(i);
+                    const chk2 = APP_STATE.selection.pos2.includes(i);
+                    html += `<td class="py-1.5 px-1 border-r border-gray-200 cursor-pointer text-center" onclick="handleCellClick(event, 'pos1', ${i})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk1 ? 'checked' : ''}></td>`;
+                    html += `<td class="py-1.5 px-1 ${ticket === "sanrenfuku" || ticket === "sanrentan" ? 'border-r border-gray-200' : ''} cursor-pointer text-center" onclick="handleCellClick(event, 'pos2', ${i})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk2 ? 'checked' : ''}></td>`;
+                    
+                    if (ticket === "sanrenfuku" || ticket === "sanrentan") {
+                        const chk3 = APP_STATE.selection.pos3.includes(i);
+                        html += `<td class="py-1.5 px-1 cursor-pointer text-center" onclick="handleCellClick(event, 'pos3', ${i})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk3 ? 'checked' : ''}></td>`;
+                    }
+                }
+
+                tr.innerHTML = html;
+                body.appendChild(tr);
+            }
+
+            let footRow = `<tr><td colspan="2" class="py-1.5 px-1 text-gray-500 font-bold bg-gray-100 text-[11px] align-middle border-r border-gray-200 text-center">
+                <div class="flex flex-col items-center justify-center">
+                    <span class="text-gray-600 font-semibold py-0.5">全選択</span>
+                    <hr class="w-full border-t border-gray-300 my-0.5">
+                    <span class="text-gray-400 font-semibold py-0.5">全解除</span>
+                </div>
+            </td>`;
+
+            const createIconBtnPair = (targetType) => `
+                <td class="py-1.5 px-1 align-middle border-r border-gray-200 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <button type="button" onclick="toggleColumnAll('${targetType}', true)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-sky-50 text-sky-600 font-bold text-[11px] flex items-center justify-center shadow-sm">全</button>
+                        <hr class="w-full border-t border-gray-300 my-0.5">
+                        <button type="button" onclick="toggleColumnAll('${targetType}', false)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-500 font-bold text-[11px] flex items-center justify-center shadow-sm">消</button>
+                    </div>
+                </td>
+            `;
+
+            if (ticket === "tansho_fukusho" || sub === "box") {
+                footRow += createIconBtnPair('boxSingle');
+            } else if (sub === "nagashi") {
+                const target = APP_STATE.nagashiTarget;
+                if (target === "1・2着" || target === "1・3着" || target === "2・3着") {
+                    footRow += `<td class="py-1 px-1 text-gray-300 border-r border-gray-200 text-center">-</td><td class="py-1 px-1 text-gray-300 border-r border-gray-200 text-center">-</td>`;
+                } else {
+                    footRow += `<td class="py-1 px-1 text-gray-300 border-r border-gray-200 text-center">-</td>`;
+                }
+                footRow += createIconBtnPair('opponent');
+            } else {
+                footRow += createIconBtnPair('pos1');
+                footRow += createIconBtnPair('pos2');
+                if (ticket === "sanrenfuku" || ticket === "sanrentan") {
+                    footRow += createIconBtnPair('pos3');
+                }
+            }
+            footRow += `</tr>`;
+            foot.innerHTML = footRow;
+
+            document.getElementById('input-unit-amount').value = getCurrentUnitAmount();
+            updateCombinationsMath();
+        }
+
+        function handleCellClick(event, type, val) {
+            APP_STATE.isFullyDecomposed = false;
+            const ticket = APP_STATE.currentTicket;
+
+            if (type === 'boxSingle') {
+                const arr = ticket === "tansho_fukusho" ? APP_STATE.selection.singleSelected : APP_STATE.selection.boxSelected;
+                const idx = arr.indexOf(val);
+                if (idx > -1) arr.splice(idx, 1);
+                else arr.push(val);
+                arr.sort((a,b)=>a-b);
+            } else if (type === 'axis1') {
+                APP_STATE.selection.axis = (APP_STATE.selection.axis === val) ? null : val;
+            } else if (type === 'axis2') {
+                APP_STATE.selection.axis2 = (APP_STATE.selection.axis2 === val) ? null : val;
+            } else if (type === 'opponent') {
+                const arr = APP_STATE.selection.opponents;
+                const idx = arr.indexOf(val);
+                if (idx > -1) arr.splice(idx, 1);
+                else arr.push(val);
+                arr.sort((a,b)=>a-b);
+            } else {
+                const arr = APP_STATE.selection[type];
+                const idx = arr.indexOf(val);
+                if (idx > -1) arr.splice(idx, 1);
+                else arr.push(val);
+                arr.sort((a,b)=>a-b);
+            }
+
+            renderHorseTable();
+            updateCombinationsMath();
+        }
+
+        function toggleColumnAll(type, isSelect) {
+            APP_STATE.isFullyDecomposed = false;
+            const count = parseInt(APP_STATE.horseCount);
+            let targetArr;
+
+            if (APP_STATE.currentTicket === "wakuren") {
+                const activeFrames = getActiveFrames(count);
+                targetArr = APP_STATE.selection[type];
+                targetArr.length = 0;
+                if (isSelect) activeFrames.forEach(f => targetArr.push(f));
+            } else {
+                if (type === 'boxSingle') {
+                    targetArr = (APP_STATE.currentTicket === "tansho_fukusho") ? APP_STATE.selection.singleSelected : APP_STATE.selection.boxSelected;
+                } else if (type === 'opponent') {
+                    targetArr = APP_STATE.selection.opponents;
+                } else {
+                    targetArr = APP_STATE.selection[type];
+                }
+
+                targetArr.length = 0;
+                if (isSelect) {
+                    for (let i = 1; i <= count; i++) targetArr.push(i);
+                }
+            }
+
+            renderHorseTable();
+            updateCombinationsMath();
+        }
+
+        function getStorageKeyForAmount() {
+            let key = APP_STATE.currentTicket;
+            if (key === "tansho_fukusho") key = APP_STATE.singleType;
+            return `${key}_${APP_STATE.subMode}`;
+        }
+
+        function getCurrentUnitAmount() {
+            const key = getStorageKeyForAmount();
+            if (!APP_STATE.unitAmounts[key]) {
+                APP_STATE.unitAmounts[key] = 1;
+            }
+            return APP_STATE.unitAmounts[key];
+        }
+
+        function setUnitAmount(val) {
+            const num = Math.max(1, parseInt(val) || 1);
+            const key = getStorageKeyForAmount();
+            APP_STATE.unitAmounts[key] = num;
+            
+            const combos = calculateCombinations();
+            APP_STATE.expandedItems = combos.map(c => ({ combo: c, amount: num }));
+
+            updateCombinationsMath();
+        }
+
+        function adjustUnitAmount(diff) {
+            let cur = getCurrentUnitAmount();
+            cur = Math.max(1, cur + diff);
+            setUnitAmount(cur);
+        }
+
+        function getUniquePermutations(values) {
+            const result = [];
+            const used = new Array(values.length).fill(false);
+            const current = [];
+            const walk = () => {
+                if (current.length === values.length) {
+                    result.push([...current]);
+                    return;
+                }
+                for (let i = 0; i < values.length; i++) {
+                    if (used[i]) continue;
+                    used[i] = true;
+                    current.push(values[i]);
+                    walk();
+                    current.pop();
+                    used[i] = false;
+                }
+            };
+            walk();
+            return result;
+        }
+
+        function calculateCombinations() {
+            const ticket = APP_STATE.currentTicket;
+            const sub = APP_STATE.subMode;
+            let combos = [];
+
+            if (ticket === "wakuren") {
+                const p1 = APP_STATE.selection.pos1;
+                const p2 = APP_STATE.selection.pos2;
+                if (sub === "box") {
+                    const sel = [...APP_STATE.selection.boxSelected].sort((a,b)=>a-b);
+                    for(let i=0; i<sel.length; i++){
+                        for(let j=i; j<sel.length; j++){
+                            combos.push([sel[i], sel[j]]);
+                        }
+                    }
+                } else {
+                    p1.forEach(f1 => {
+                        p2.forEach(f2 => {
+                            const pair = [f1, f2].sort((a,b)=>a-b);
+                            if (!combos.some(c => c[0]===pair[0] && c[1]===pair[1])) {
+                                combos.push(pair);
+                            }
+                        });
+                    });
+                }
+                return combos;
+            }
+
+            if (ticket === "tansho_fukusho") {
+                return [...APP_STATE.selection.singleSelected].sort((a,b)=>a-b).map(h => [h]);
+            }
+
+            if (sub === "box") {
+                const sel = [...APP_STATE.selection.boxSelected].sort((a,b)=>a-b);
+                if (ticket === "umaren" || ticket === "wide") {
+                    for(let i=0; i<sel.length; i++){
+                        for(let j=i+1; j<sel.length; j++){
+                            combos.push([sel[i], sel[j]]);
+                        }
+                    }
+                } else if (ticket === "umatan") {
+                    for(let i=0; i<sel.length; i++){
+                        for(let j=0; j<sel.length; j++){
+                            if(i!==j) combos.push([sel[i], sel[j]]);
+                        }
+                    }
+                } else if (ticket === "sanrenfuku") {
+                    for(let i=0; i<sel.length; i++){
+                        for(let j=i+1; j<sel.length; j++){
+                            for(let k=j+1; k<sel.length; k++){
+                                combos.push([sel[i], sel[j], sel[k]]);
+                            }
+                        }
+                    }
+                } else if (ticket === "sanrentan") {
+                    for(let i=0; i<sel.length; i++){
+                        for(let j=0; j<sel.length; j++){
+                            for(let k=0; k<sel.length; k++){
+                                if(i!==j && j!==k && i!==k) combos.push([sel[i], sel[j], sel[k]]);
+                            }
+                        }
+                    }
+                }
+            } else if (sub === "nagashi") {
+                const axis = APP_STATE.selection.axis;
+                const axis2 = APP_STATE.selection.axis2;
+                const opps = [...APP_STATE.selection.opponents].sort((a,b)=>a-b);
+
+                if (!axis) return [];
+
+                if (ticket === "umaren" || ticket === "wide") {
+                    opps.forEach(o => {
+                        if (axis !== o) {
+                            const pair = [axis, o].sort((a,b)=>a-b);
+                            combos.push(pair);
+                        }
+                    });
+                } else if (ticket === "umatan") {
+                    const target = APP_STATE.nagashiTarget;
+                    opps.forEach(o => {
+                        if (axis !== o) {
+                            if (target === "2着") combos.push([o, axis]);
+                            else combos.push([axis, o]);
+                        }
+                    });
+                } else if (ticket === "sanrenfuku") {
+                    for(let i=0; i<opps.length; i++){
+                        for(let j=i+1; j<opps.length; j++){
+                            if(opps[i]!==axis && opps[j]!==axis){
+                                const trio = [axis, opps[i], opps[j]].sort((a,b)=>a-b);
+                                combos.push(trio);
+                            }
+                        }
+                    }
+                } else if (ticket === "sanrentan") {
+                    const target = APP_STATE.nagashiTarget;
+                    if (target === "1・2着" || target === "1・3着" || target === "2・3着") {
+                        if (!axis2 || axis === axis2) return [];
+                        opps.forEach(o => {
+                            if (o !== axis && o !== axis2) {
+                                if (target === "1・2着") combos.push([axis, axis2, o]);
+                                else if (target === "1・3着") combos.push([axis, o, axis2]);
+                                else if (target === "2・3着") combos.push([o, axis, axis2]);
+                            }
+                        });
+                    } else {
+                        for(let i=0; i<opps.length; i++){
+                            for(let j=0; j<opps.length; j++){
+                                if(opps[i]!==opps[j] && opps[i]!==axis && opps[j]!==axis){
+                                    if (target === "1着") combos.push([axis, opps[i], opps[j]]);
+                                    else if (target === "2着") combos.push([opps[i], axis, opps[j]]);
+                                    else if (target === "3着") combos.push([opps[i], opps[j], axis]);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                const p1 = [...APP_STATE.selection.pos1].sort((a,b)=>a-b);
+                const p2 = [...APP_STATE.selection.pos2].sort((a,b)=>a-b);
+                const p3 = [...APP_STATE.selection.pos3].sort((a,b)=>a-b);
+
+                if (ticket === "umaren" || ticket === "wide") {
+                    p1.forEach(h1 => {
+                        p2.forEach(h2 => {
+                            if (h1 !== h2) {
+                                const pair = [h1, h2].sort((a,b)=>a-b);
+                                if (!combos.some(c => c[0]===pair[0] && c[1]===pair[1])) {
+                                    combos.push(pair);
+                                }
+                            }
+                        });
+                    });
+                } else if (ticket === "umatan") {
+                    p1.forEach(h1 => {
+                        p2.forEach(h2 => {
+                            if (h1 !== h2) combos.push([h1, h2]);
+                        });
+                    });
+                } else if (ticket === "sanrenfuku") {
+                    p1.forEach(h1 => {
+                        p2.forEach(h2 => {
+                            p3.forEach(h3 => {
+                                if (h1!==h2 && h2!==h3 && h1!==h3) {
+                                    const trio = [h1, h2, h3].sort((a,b)=>a-b);
+                                    if (!combos.some(c => c[0]===trio[0] && c[1]===trio[1] && c[2]===trio[2])) {
+                                        combos.push(trio);
+                                    }
+                                }
+                            });
+                        });
+                    });
+                } else if (ticket === "sanrentan") {
+                    p1.forEach(h1 => {
+                        p2.forEach(h2 => {
+                            p3.forEach(h3 => {
+                                if (h1!==h2 && h2!==h3 && h1!==h3) {
+                                    combos.push([h1, h2, h3]);
+                                }
+                            });
+                        });
+                    });
+                }
+            }
+
+            // マルチは馬単なら表裏、3連単なら同じ馬の全着順 permutations を購入対象にする。
+            // ボックスやながしで既に同一組み合わせが生成されていても重複は除去する。
+            if (APP_STATE.isMulti && (ticket === 'umatan' || ticket === 'sanrentan')) {
+                const expanded = [];
+                const seen = new Set();
+                combos.forEach(combo => {
+                    getUniquePermutations(combo).forEach(permutation => {
+                        const key = permutation.join('-');
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            expanded.push(permutation);
+                        }
+                    });
+                });
+                combos = expanded;
+            }
+            return combos;
+        }
+
+        function updateCombinationsMath() {
+            const combos = calculateCombinations();
+            const parentContainer = document.getElementById('preview-parent-badges');
+            const badgeContainer = document.getElementById('preview-combinations-badges');
+            const summaryText = document.getElementById('preview-summary-text');
+            const ticketHeader = document.getElementById('preview-ticket-header');
+            const expansionContainer = document.getElementById('expansion-container');
+            const globalUnitContainer = document.getElementById('global-unit-amount-container');
+
+            let ticketKey = APP_STATE.currentTicket;
+            if (ticketKey === "tansho_fukusho") ticketKey = APP_STATE.singleType;
+
+            const tInfo = TICKET_COLORS[ticketKey] || { bg: 'bg-sky-600', text: ticketKey };
+            ticketHeader.innerText = tInfo.text;
+            ticketHeader.className = `${tInfo.bg} px-3 py-1.5 rounded-t-lg font-bold text-xs text-white mb-2`;
+
+            const count = parseInt(APP_STATE.horseCount);
+            const currentUnit = getCurrentUnitAmount();
+            document.getElementById('input-unit-amount').value = currentUnit;
+
+            if (APP_STATE.expandedItems.length !== combos.length) {
+                APP_STATE.expandedItems = combos.map(c => ({ combo: c, amount: currentUnit }));
+            }
+
+            if (APP_STATE.currentTicket === "tansho_fukusho") {
+                expansionContainer.classList.add('hidden');
+                badgeContainer.classList.remove('hidden');
+                globalUnitContainer.classList.remove('hidden');
+                parentContainer.innerHTML = '';
+
+                const sortedSingle = [...APP_STATE.selection.singleSelected].sort((a, b) => a - b);
+                badgeContainer.innerHTML = sortedSingle.map(h => {
+                    const fNum = getFrameNumber(h, count);
+                    const fStyle = FRAME_COLORS[fNum - 1] || FRAME_COLORS[0];
+                    const amt = APP_STATE.singleCustomAmounts[h] !== undefined ? APP_STATE.singleCustomAmounts[h] : currentUnit;
+
+                    return `
+                        <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-200 shadow-sm w-full my-1">
+                            <span class="w-7 h-7 flex items-center justify-center rounded ${fStyle.bg} font-bold text-xs shadow-sm shrink-0">${h}</span>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="changeSingleAmount(${h}, -1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 text-xs flex items-center justify-center">-</button>
+                                <div class="flex items-center border border-gray-300 rounded px-1.5 py-0.5 bg-white">
+                                    <input type="number" value="${amt}" min="1" step="1" onchange="setSingleAmountMoney(${h}, this.value)" class="w-10 text-right text-xs font-bold focus:outline-none">
+                                    <span class="text-xs text-gray-700 font-bold ml-0.5">00円</span>
+                                </div>
+                                <button type="button" onclick="changeSingleAmount(${h}, 1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 text-xs flex items-center justify-center">+</button>
+                                <button type="button" onclick="toggleSelection('boxSingle', ${h})" class="ml-2 text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                if (APP_STATE.isFullyDecomposed) {
+                    parentContainer.innerHTML = '';
+                    expansionContainer.classList.add('hidden');
+                    badgeContainer.classList.remove('hidden');
+                    globalUnitContainer.classList.add('hidden');
+                } else {
+                    expansionContainer.classList.remove('hidden');
+                    globalUnitContainer.classList.remove('hidden');
+
+                    let parentHtml = '';
+                    const renderPosBadges = (label, posArr) => {
+                        const sortedArr = [...posArr].sort((a, b) => a - b);
+                        const badges = sortedArr.length > 0 ? sortedArr.map(h => {
+                            const fNum = getFrameNumber(h, count);
+                            const fStyle = FRAME_COLORS[fNum - 1] || FRAME_COLORS[0];
+                            return `<span class="w-6 h-6 flex items-center justify-center rounded ${fStyle.bg} font-bold text-xs shadow-sm shrink-0">${h}</span>`;
+                        }).join(' ') : `<span class="text-gray-400 text-xs italic">未選択</span>`;
+
+                        return `
+                            <div class="flex items-center justify-between py-1 border-b border-gray-100">
+                                <div class="flex items-center gap-2">
+                                    <span class="horse-badge-arrow">${label}</span>
+                                    <div class="flex flex-wrap gap-1">${badges}</div>
+                                </div>
+                            </div>
+                        `;
+                    };
+
+                    if (APP_STATE.subMode === "formation") {
+                        parentHtml += renderPosBadges("馬1", APP_STATE.selection.pos1);
+                        parentHtml += renderPosBadges("馬2", APP_STATE.selection.pos2);
+                        if (APP_STATE.currentTicket === "sanrenfuku" || APP_STATE.currentTicket === "sanrentan") {
+                            parentHtml += renderPosBadges("馬3", APP_STATE.selection.pos3);
+                        }
+                    } else if (APP_STATE.subMode === "nagashi") {
+                        parentHtml += renderPosBadges("軸", APP_STATE.selection.axis ? [APP_STATE.selection.axis] : []);
+                        if (APP_STATE.selection.axis2) parentHtml += renderPosBadges("軸2", [APP_STATE.selection.axis2]);
+                        parentHtml += renderPosBadges("相手", APP_STATE.selection.opponents);
+                    } else {
+                        parentHtml += renderPosBadges("選択", APP_STATE.selection.boxSelected);
+                    }
+
+                    const totalGroupCost = combos.length * currentUnit * 100;
+
+                    parentContainer.innerHTML = `
+                        <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-200 mb-2">
+                            <div class="flex items-center justify-between border-b border-gray-200 pb-1 mb-1">
+                                <span class="text-xs font-bold text-gray-700">${APP_STATE.subMode === 'formation' ? 'フォーメーション' : (APP_STATE.subMode === 'box' ? 'ボックス' : 'ながし')}</span>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-xs font-bold text-gray-500">各</span>
+                                    <button type="button" onclick="adjustUnitAmount(-1)" class="w-6 h-6 bg-white hover:bg-gray-100 text-gray-700 font-bold rounded border border-gray-300 text-xs flex items-center justify-center shadow-sm">-</button>
+                                    <div class="flex items-center border border-gray-300 rounded px-1.5 py-0.5 bg-white">
+                                        <input type="number" value="${currentUnit}" min="1" step="1" onchange="setUnitAmount(this.value)" class="w-10 text-right text-xs font-bold focus:outline-none">
+                                        <span class="text-xs text-gray-700 font-bold ml-0.5">00円</span>
+                                    </div>
+                                    <button type="button" onclick="adjustUnitAmount(1)" class="w-6 h-6 bg-white hover:bg-gray-100 text-gray-700 font-bold rounded border border-gray-300 text-xs flex items-center justify-center shadow-sm">+</button>
+                                </div>
+                            </div>
+                            ${parentHtml}
+                            <div class="text-right pt-2">
+                                <span class="text-xs font-bold text-gray-800">${combos.length}点 計 ${totalGroupCost.toLocaleString()}円</span>
+                            </div>
+                        </div>
+                    `;
+
+                    if (!APP_STATE.isExpanded) {
+                        badgeContainer.classList.add('hidden');
+                    } else {
+                        badgeContainer.classList.remove('hidden');
+                    }
+                }
+            }
+
+            renderExpandedItems();
+            updateTotalCostDisplay();
+        }
+
+        function toggleSelection(type, val) {
+            if (type === 'boxSingle') {
+                const arr = APP_STATE.currentTicket === "tansho_fukusho" ? APP_STATE.selection.singleSelected : APP_STATE.selection.boxSelected;
+                const idx = arr.indexOf(val);
+                if (idx > -1) arr.splice(idx, 1);
+            }
+            renderHorseTable();
+            updateCombinationsMath();
+        }
+
+        function changeSingleAmount(h, diff) {
+            let cur = APP_STATE.singleCustomAmounts[h] !== undefined ? APP_STATE.singleCustomAmounts[h] : getCurrentUnitAmount();
+            cur = Math.max(1, cur + diff);
+            APP_STATE.singleCustomAmounts[h] = cur;
+            updateCombinationsMath();
+        }
+
+        function setSingleAmountMoney(h, val) {
+            let num = Math.max(1, parseInt(val) || 1);
+            APP_STATE.singleCustomAmounts[h] = num;
+            updateCombinationsMath();
+        }
+
+        function toggleExpansion() {
+            const badgeContainer = document.getElementById('preview-combinations-badges');
+            const expansionBtn = document.getElementById('expansion-btn');
+
+            if (!APP_STATE.isExpanded) {
+                APP_STATE.isExpanded = true;
+                expansionBtn.innerHTML = '展開を閉じる <i class="fa-solid fa-chevron-up"></i>';
+                badgeContainer.classList.remove('hidden');
+            } else {
+                APP_STATE.isExpanded = false;
+                expansionBtn.innerHTML = '展開する <i class="fa-solid fa-chevron-down"></i>';
+                badgeContainer.classList.add('hidden');
+            }
+            updateCombinationsMath();
+        }
+
+        function renderExpandedItems() {
+            if (APP_STATE.currentTicket === "tansho_fukusho") return;
+            const badgeContainer = document.getElementById('preview-combinations-badges');
+            const combos = calculateCombinations();
+            const count = parseInt(APP_STATE.horseCount);
+            const currentUnit = getCurrentUnitAmount();
+
+            const html = combos.map((c, idx) => {
+                const item = APP_STATE.expandedItems[idx] || { combo: c, amount: currentUnit };
+                const comboStr = c.map(num => {
+                    const fNum = getFrameNumber(num, count);
+                    const fStyle = FRAME_COLORS[fNum - 1] || FRAME_COLORS[0];
+                    return `<span class="w-6 h-6 flex items-center justify-center rounded ${fStyle.bg} font-bold text-xs shadow-sm shrink-0">${num}</span>`;
+                }).join('<span class="text-gray-400 font-bold px-0.5">-</span>');
+
+                return `
+                    <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-200 shadow-sm w-full my-1">
+                        <div class="flex items-center gap-1">${comboStr}</div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="triggerIndividualAmountChange(${idx}, -1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 text-xs flex items-center justify-center">-</button>
+                            <div class="flex items-center border border-gray-300 rounded px-1.5 py-0.5 bg-white">
+                                <input type="number" value="${item.amount}" min="1" step="1" onchange="triggerIndividualAmountInput(${idx}, this.value)" class="w-10 text-right text-xs font-bold focus:outline-none">
+                                <span class="text-xs text-gray-700 font-bold ml-0.5">00円</span>
+                            </div>
+                            <button type="button" onclick="triggerIndividualAmountChange(${idx}, 1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 text-xs flex items-center justify-center">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            badgeContainer.innerHTML = html;
+        }
+
+        function triggerIndividualAmountChange(idx, diff) {
+            if (!APP_STATE.isFullyDecomposed) {
+                pendingIndividualAction = () => {
+                    executeIndividualAmountChange(idx, diff);
+                };
+                document.getElementById('confirm-modal').classList.remove('hidden');
+            } else {
+                executeIndividualAmountChange(idx, diff);
+            }
+        }
+
+        function triggerIndividualAmountInput(idx, val) {
+            if (!APP_STATE.isFullyDecomposed) {
+                pendingIndividualAction = () => {
+                    executeIndividualAmountInput(idx, val);
+                };
+                document.getElementById('confirm-modal').classList.remove('hidden');
+            } else {
+                executeIndividualAmountInput(idx, val);
+            }
+        }
+
+        function confirmExpansionOK() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            if (pendingCartAction) {
+                const action = pendingCartAction;
+                pendingCartAction = null;
+                action();
+                return;
+            }
+            APP_STATE.isFullyDecomposed = true;
+            if (pendingIndividualAction) pendingIndividualAction();
+            pendingIndividualAction = null;
+            updateCombinationsMath();
+        }
+
+        function confirmExpansionCancel() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            pendingIndividualAction = null;
+            pendingCartAction = null;
+            renderExpandedItems();
+            renderCartModalItems();
+            renderBatchItems();
+        }
+
+        function executeIndividualAmountChange(idx, diff) {
+            if (!APP_STATE.expandedItems[idx]) {
+                APP_STATE.expandedItems[idx] = { amount: getCurrentUnitAmount() };
+            }
+            let cur = APP_STATE.expandedItems[idx].amount || getCurrentUnitAmount();
+            cur = Math.max(1, cur + diff);
+            APP_STATE.expandedItems[idx].amount = cur;
+            renderExpandedItems();
+            updateTotalCostDisplay();
+        }
+
+        function executeIndividualAmountInput(idx, val) {
+            let num = Math.max(1, parseInt(val) || 1);
+            if (!APP_STATE.expandedItems[idx]) APP_STATE.expandedItems[idx] = {};
+            APP_STATE.expandedItems[idx].amount = num;
+            renderExpandedItems();
+            updateTotalCostDisplay();
+        }
+
+        function updateTotalCostDisplay() {
+            const combos = calculateCombinations();
+            let totalCost = 0;
+            if (APP_STATE.currentTicket === "tansho_fukusho") {
+                APP_STATE.selection.singleSelected.forEach(h => {
+                    const amt = (APP_STATE.singleCustomAmounts[h] !== undefined ? APP_STATE.singleCustomAmounts[h] : getCurrentUnitAmount()) * 100;
+                    totalCost += amt;
+                });
+            } else if (APP_STATE.isFullyDecomposed || APP_STATE.isExpanded) {
+                APP_STATE.expandedItems.forEach(item => {
+                    totalCost += (item.amount || getCurrentUnitAmount()) * 100;
+                });
+            } else {
+                const unit = getCurrentUnitAmount() * 100;
+                totalCost = combos.length * unit;
+            }
+            document.getElementById('preview-summary-text').innerText = `${combos.length}点 計 ${totalCost.toLocaleString()}円`;
+        }
+
+        function addCurrentToCart() {
+            const place = document.getElementById('race-place').value;
+            if (!place || !APP_STATE.raceNumber) {
+                alert("レース場とR番号を選択してください。");
+                return;
+            }
+
+            const combos = calculateCombinations();
+            if (combos.length === 0) {
+                alert("買い目が選択されていません。");
+                return;
+            }
+
+            let ticketKey = APP_STATE.currentTicket;
+            if (ticketKey === "tansho_fukusho") ticketKey = APP_STATE.singleType;
+
+            // カート追加時点の各買い目の購入単位を確定して保存する。
+            const savedItems = combos.map((combo, idx) => {
+                let amountUnits;
+                if (APP_STATE.currentTicket === 'tansho_fukusho') {
+                    const horse = combo[0];
+                    amountUnits = APP_STATE.singleCustomAmounts[horse] !== undefined
+                        ? APP_STATE.singleCustomAmounts[horse]
+                        : getCurrentUnitAmount();
+                } else if (APP_STATE.expandedItems[idx]?.amount !== undefined) {
+                    amountUnits = APP_STATE.expandedItems[idx].amount;
+                } else {
+                    amountUnits = getCurrentUnitAmount();
+                }
+                return { combo: cloneData(combo), amount: Math.max(1, Number(amountUnits) || 1) };
+            });
+
+            const newCartItem = {
+                id: Date.now(),
+                date: APP_STATE.currentDate,
+                place: place,
+                rNum: APP_STATE.raceNumber,
+                horseCount: APP_STATE.horseCount,
+                ticket: ticketKey,
+                subMode: APP_STATE.subMode,
+                compact: APP_STATE.currentTicket !== 'tansho_fukusho',
+                displayExpanded: false,
+                isDecomposed: false,
+                isMulti: APP_STATE.isMulti,
+                selection: cloneData(APP_STATE.selection),
+                items: savedItems,
+                combos: cloneData(combos),
+                totalPoints: combos.length,
+                totalAmount: savedItems.reduce((sum, item) => sum + item.amount * 100, 0)
+            };
+
+            if (ticketKey === 'tansho' || ticketKey === 'fukusho') {
+                // 単勝・複勝は同じレース・券種なら追加回数にかかわらず1ブロックにまとめる。
+                const existing = APP_STATE.cart.find(group =>
+                    group.date === newCartItem.date && group.place === newCartItem.place &&
+                    Number(group.rNum) === Number(newCartItem.rNum) && group.ticket === ticketKey
+                );
+                if (existing) {
+                    const combined = [...(existing.combos || []).map((combo, idx) => ({
+                        combo: cloneData(combo), item: cloneData(existing.items?.[idx] || { amount: 1 })
+                    })), ...newCartItem.combos.map((combo, idx) => ({
+                        combo: cloneData(combo), item: cloneData(newCartItem.items[idx])
+                    }))];
+                    combined.sort((a, b) => Number(a.combo[0]) - Number(b.combo[0]));
+                    existing.combos = combined.map(x => x.combo);
+                    existing.items = combined.map(x => x.item);
+                    existing.totalPoints = existing.combos.length;
+                    existing.totalAmount = existing.items.reduce((sum, item) => sum + Math.max(1, Number(item.amount) || 1) * 100, 0);
+                    existing.horseCount = newCartItem.horseCount;
+                } else {
+                    APP_STATE.cart.push(newCartItem);
+                }
+            } else {
+                APP_STATE.cart.push(newCartItem);
+            }
+            saveToLocalStorage();
+            updateCartBadge();
+
+            // 追加後も現在の券種・買い方・選択チェックを維持する。
+            // 券種を切り替えた場合は switchTicket() 側で選択がリセットされる。
+            updateCombinationsMath();
+        }
+
+        function updateCartBadge() {
+            const place = document.getElementById('race-place').value;
+            const rNum = APP_STATE.raceNumber;
+            const currentRaceItems = APP_STATE.cart.filter(item => item.date === APP_STATE.currentDate && item.place === place && item.rNum === rNum);
+            
+            let totalPoints = 0;
+            currentRaceItems.forEach(group => {
+                totalPoints += group.combos.length;
+            });
+
+            document.getElementById('cart-badge').innerText = `${totalPoints}点`;
+        }
+
+        function openCartModal() {
+            const place = document.getElementById('race-place').value;
+            if (!place || !APP_STATE.raceNumber) {
+                alert("レース場とR番号を選択してください。");
+                return;
+            }
+            renderCartModalItems();
+            document.getElementById('cart-modal').classList.remove('hidden');
+        }
+
+        function closeCartModal() {
+            document.getElementById('cart-modal').classList.add('hidden');
+        }
+
+        function renderCompactGroupSelection(group) {
+            const selection = group.selection || {};
+            const count = Number(group.horseCount) || 18;
+            const renderBadges = (label, numbers) => {
+                const nums = (numbers || []).slice().sort((a, b) => a - b);
+                if (!nums.length) return '';
+                const badges = nums.map(num => {
+                    const frame = group.ticket === 'wakuren' ? Number(num) : getFrameNumber(num, count);
+                    const style = FRAME_COLORS[frame - 1] || FRAME_COLORS[0];
+                    return `<span class="w-6 h-6 flex items-center justify-center rounded ${style.bg} font-bold text-xs shadow-sm shrink-0">${num}</span>`;
+                }).join(' ');
+                return `<div class="flex items-center justify-between py-1 border-b border-gray-100"><div class="flex items-center gap-2"><span class="horse-badge-arrow">${label}</span><div class="flex flex-wrap gap-1">${badges}</div></div></div>`;
+            };
+            let rows = '';
+            if (group.subMode === 'formation') {
+                rows += renderBadges('馬1', selection.pos1);
+                rows += renderBadges('馬2', selection.pos2);
+                if (group.ticket === 'sanrenfuku' || group.ticket === 'sanrentan') rows += renderBadges('馬3', selection.pos3);
+            } else if (group.subMode === 'box') {
+                rows += renderBadges('選択', selection.boxSelected);
+            } else if (group.subMode === 'nagashi') {
+                rows += renderBadges('軸', selection.axis == null ? [] : [selection.axis]);
+                if (selection.axis2 != null) rows += renderBadges('軸2', [selection.axis2]);
+                rows += renderBadges('相手', selection.opponents);
+            } else {
+                rows += renderBadges('選択', selection.singleSelected || selection.boxSelected || []);
+            }
+            return `<div class="bg-gray-50 p-2.5 rounded-lg border border-gray-200">${rows}<div class="text-right pt-2"><span class="text-xs font-bold text-gray-800">${group.combos.length}点</span></div></div>`;
+        }
+
+        function renderCartSelectionPanel(group, groupIdx) {
+            const items = group.items || [];
+            const firstAmount = items.length ? Math.max(1, Number(items[0].amount) || 1) : 1;
+            const sameAmount = items.every(item => (Number(item.amount) || 1) === firstAmount);
+            const amountValue = sameAmount ? `value="${firstAmount}"` : 'placeholder="混在"';
+            return `<div class="bg-white p-2.5 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="text-xs font-bold text-gray-700">${group.subMode === 'formation' ? 'フォーメーション' : group.subMode === 'box' ? 'ボックス' : group.subMode === 'nagashi' ? 'ながし' : '買い目'}</span>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <span class="text-xs font-bold text-gray-600">各</span>
+                        <button type="button" onclick="adjustCartGroupAmount(${groupIdx}, -1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300">-</button>
+                        <div class="flex items-center border border-gray-300 rounded px-1.5 py-0.5 bg-white"><input type="number" min="1" step="1" ${amountValue} onchange="setCartGroupAmount(${groupIdx}, this.value)" class="w-10 text-right text-xs font-bold focus:outline-none"><span class="text-[11px] font-bold ml-0.5">00円</span></div>
+                        <button type="button" onclick="adjustCartGroupAmount(${groupIdx}, 1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300">+</button>
+                    </div>
+                </div>
+                ${renderCompactGroupSelection(group)}
+            </div>
+            <button type="button" onclick="${group.displayExpanded ? `collapseCartGroup(${groupIdx})` : `expandCartGroup(${groupIdx})`}" class="w-full mt-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs">
+                ${group.displayExpanded ? '展開を閉じる' : '展開する'} <i class="fa-solid ${group.displayExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
+            </button>`;
+        }
+
+        function renderCartModalItems() {
+            const container = document.getElementById('cart-modal-items');
+            const place = document.getElementById('race-place').value;
+            const rNum = APP_STATE.raceNumber;
+            const ticketOrder = ['tansho', 'fukusho', 'wakuren', 'umaren', 'wide', 'umatan', 'sanrenfuku', 'sanrentan'];
+            const currentRaceItems = APP_STATE.cart
+                .map((item, originalIndex) => ({ item, originalIndex }))
+                .filter(entry => entry.item.date === APP_STATE.currentDate && entry.item.place === place && entry.item.rNum === rNum)
+                .sort((a, b) => {
+                    const ai = ticketOrder.indexOf(a.item.ticket);
+                    const bi = ticketOrder.indexOf(b.item.ticket);
+                    const ar = ai < 0 ? ticketOrder.length : ai;
+                    const br = bi < 0 ? ticketOrder.length : bi;
+                    return ar - br || a.originalIndex - b.originalIndex;
+                })
+                .map(entry => entry.item);
+            if (currentRaceItems.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-400 text-sm font-bold">このレースの買い目はありません</div>`;
+                document.getElementById('cart-modal-summary-count').innerText = `0組 0点`;
+                document.getElementById('cart-modal-summary-cost').innerText = `合計 0円`;
+                return;
+            }
+            let totalPoints = 0, totalCost = 0;
+            const html = currentRaceItems.map(group => {
+                const groupIdx = APP_STATE.cart.findIndex(i => i.id === group.id);
+                const items = group.items || [];
+                const groupCost = items.reduce((sum, item) => sum + Math.max(1, Number(item.amount) || 1) * 100, 0);
+                totalPoints += group.combos.length;
+                totalCost += groupCost;
+                const ticketInfo = TICKET_COLORS[group.ticket] || { bg: 'bg-gray-600', text: group.ticket };
+                const subModeText = group.subMode === 'individual' ? '個別' : (group.subMode === 'formation' ? 'フォーメーション' : (group.subMode === 'box' ? 'ボックス' : 'ながし'));
+                let detailHtml = '';
+                if (group.compact && !group.isDecomposed) {
+                    detailHtml = renderCartSelectionPanel(group, groupIdx);
+                    if (group.displayExpanded) {
+                        detailHtml += group.combos.map((combo, comboIdx) => {
+                            const amt = Math.max(1, Number(items[comboIdx]?.amount) || 1);
+                            const comboStr = combo.map(num => {
+                                const fNum = group.ticket === 'wakuren' ? Number(num) : getFrameNumber(num, group.horseCount);
+                                const fStyle = FRAME_COLORS[fNum - 1] || FRAME_COLORS[0];
+                                return `<span class="w-6 h-6 flex items-center justify-center rounded ${fStyle.bg} font-bold text-xs shadow-sm">${num}</span>`;
+                            }).join('<span class="text-gray-400 font-bold px-0.5">-</span>');
+                            return `<div class="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-200 shadow-sm w-full my-1">
+                                <div class="flex items-center gap-1">${comboStr}</div>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" onclick="requestCartIndividualAction(${groupIdx}, () => adjustCartSingleAmount(${groupIdx}, ${comboIdx}, -1))" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 text-xs">-</button>
+                                    <div class="flex items-center border border-gray-300 rounded px-1.5 py-0.5 bg-white"><input type="number" value="${amt}" min="1" step="1" onchange="requestCartIndividualAction(${groupIdx}, () => setCartSingleAmount(${groupIdx}, ${comboIdx}, this.value))" class="w-10 text-right text-xs font-bold focus:outline-none"><span class="text-xs text-gray-700 font-bold ml-0.5">00円</span></div>
+                                    <button type="button" onclick="requestCartIndividualAction(${groupIdx}, () => adjustCartSingleAmount(${groupIdx}, ${comboIdx}, 1))" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 text-xs">+</button>
+                                    <button type="button" onclick="requestCartIndividualAction(${groupIdx}, () => removeSingleComboItem(${groupIdx}, ${comboIdx}))" class="ml-1 text-gray-400 hover:text-red-500 text-xs"><i class="fa-solid fa-trash-can"></i></button>
+                                </div></div>`;
+                        }).join('');
+                    }
+                } else {
+                    detailHtml = group.combos.map((combo, comboIdx) => {
+                        const amt = Math.max(1, Number(items[comboIdx]?.amount) || 1);
+                        const comboStr = combo.map(num => {
+                            const fNum = group.ticket === 'wakuren' ? Number(num) : getFrameNumber(num, group.horseCount);
+                            const fStyle = FRAME_COLORS[fNum - 1] || FRAME_COLORS[0];
+                            return `<span class="w-6 h-6 flex items-center justify-center rounded ${fStyle.bg} font-bold text-xs shadow-sm">${num}</span>`;
+                        }).join('<span class="text-gray-400 font-bold px-0.5">-</span>');
+                        return `<div class="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-200 shadow-sm w-full my-1">
+                            <div class="flex items-center gap-1">${comboStr}</div>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="adjustCartSingleAmount(${groupIdx}, ${comboIdx}, -1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 text-xs">-</button>
+                                <div class="flex items-center border border-gray-300 rounded px-1.5 py-0.5 bg-white"><input type="number" value="${amt}" min="1" step="1" onchange="setCartSingleAmount(${groupIdx}, ${comboIdx}, this.value)" class="w-10 text-right text-xs font-bold focus:outline-none"><span class="text-xs text-gray-700 font-bold ml-0.5">00円</span></div>
+                                <button type="button" onclick="adjustCartSingleAmount(${groupIdx}, ${comboIdx}, 1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 text-xs">+</button>
+                                <button type="button" onclick="removeSingleComboItem(${groupIdx}, ${comboIdx})" class="ml-1 text-gray-400 hover:text-red-500 text-xs"><i class="fa-solid fa-trash-can"></i></button>
+                            </div></div>`;
+                    }).join('');
+                }
+                return `<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2 border-b border-gray-100 ${ticketInfo.bg}"><span class="font-bold text-xs text-white">${ticketInfo.text} (${subModeText})</span><button type="button" onclick="removeCartItem(${groupIdx})" class="text-white/80 hover:text-white text-xs p-1 flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> 組ごと削除</button></div>
+                    <div class="p-3 space-y-1 bg-gray-50/50">${detailHtml}</div>
+                    <div class="flex items-center justify-between px-4 py-2 bg-gray-50 border-t border-gray-100"><span class="text-xs font-bold text-gray-500">${group.combos.length}点</span><span class="text-sm font-black text-gray-800">${groupCost.toLocaleString()}円</span></div>
+                </div>`;
+            }).join('');
+            container.innerHTML = html;
+            document.getElementById('cart-modal-summary-count').innerText = `${currentRaceItems.length}組 ${totalPoints}点`;
+            document.getElementById('cart-modal-summary-cost').innerText = `合計 ${totalCost.toLocaleString()}円`;
+        }
+
+        function expandCartGroup(groupIdx) {
+            const g = APP_STATE.cart[groupIdx];
+            if (g) g.displayExpanded = true;
+            renderCartModalItems();
+            renderBatchItems();
+        }
+        function collapseCartGroup(groupIdx) { if (APP_STATE.cart[groupIdx]) APP_STATE.cart[groupIdx].displayExpanded = false; renderCartModalItems(); renderBatchItems(); }
+
+        // 組み合わせの個別編集を初めて行うときだけ、フォーメーションの個別展開を確認する。
+        function requestCartIndividualAction(groupIdx, action) {
+            const group = APP_STATE.cart[groupIdx];
+            if (!group) return;
+            if (group.compact && !group.isDecomposed) {
+                pendingCartAction = () => {
+                    const current = APP_STATE.cart[groupIdx];
+                    if (!current) return;
+                    // 個別編集へ移行したら、買い目作成エリアと同様に
+                    // フォーメーション概要（一括金額設定を含む）を隠して組み合わせだけ表示する。
+                    current.isDecomposed = true;
+                    current.displayExpanded = true;
+                    action();
+                    renderCartModalItems();
+                    renderBatchItems();
+                    updateCartBadge();
+                };
+                document.getElementById('confirm-modal').classList.remove('hidden');
+                return;
+            }
+            action();
+        }
+        function adjustCartGroupAmount(groupIdx, diff) {
+            const group = APP_STATE.cart[groupIdx]; if (!group) return;
+            const cur = Math.max(1, Number(group.items?.[0]?.amount) || 1), next = Math.max(1, cur + diff);
+            group.items = group.combos.map(combo => ({ combo: cloneData(combo), amount: next }));
+            saveToLocalStorage(); renderCartModalItems(); updateCartBadge();
+        }
+        function setCartGroupAmount(groupIdx, value) {
+            const group = APP_STATE.cart[groupIdx]; if (!group) return;
+            const next = Math.max(1, parseInt(value) || 1);
+            group.items = group.combos.map(combo => ({ combo: cloneData(combo), amount: next }));
+            saveToLocalStorage(); renderCartModalItems(); updateCartBadge();
+        }
+
+        function adjustCartSingleAmount(groupIdx, comboIdx, diff) {
+            const group = APP_STATE.cart[groupIdx];
+            if (!group) return;
+            if (!group.items[comboIdx]) group.items[comboIdx] = { amount: 1 };
+            let cur = group.items[comboIdx].amount || 1;
+            cur = Math.max(1, cur + diff);
+            group.items[comboIdx].amount = cur;
+            saveToLocalStorage();
+            renderCartModalItems();
+            updateCartBadge();
+        }
+
+        function setCartSingleAmount(groupIdx, comboIdx, val) {
+            const group = APP_STATE.cart[groupIdx];
+            if (!group) return;
+            if (!group.items[comboIdx]) group.items[comboIdx] = { amount: 1 };
+            let num = Math.max(1, parseInt(val) || 1);
+            group.items[comboIdx].amount = num;
+            saveToLocalStorage();
+            renderCartModalItems();
+            updateCartBadge();
+        }
+
+        function removeSingleComboItem(groupIdx, comboIdx) {
+            const group = APP_STATE.cart[groupIdx];
+            if (!group) return;
+            group.combos.splice(comboIdx, 1);
+            group.items.splice(comboIdx, 1);
+            group.totalPoints = group.combos.length;
+            group.totalAmount = (group.items || []).reduce((sum, item) => sum + Math.max(1, Number(item.amount) || 1) * 100, 0);
+
+            if (group.combos.length === 0) {
+                APP_STATE.cart.splice(groupIdx, 1);
+            }
+            saveToLocalStorage();
+            renderCartModalItems();
+            updateCartBadge();
+        }
+
+        function removeCartItem(idx) {
+            APP_STATE.cart.splice(idx, 1);
+            saveToLocalStorage();
+            updateCartBadge();
+            renderCartModalItems();
+        }
+
+        function openBatchMode(mode) {
+            currentBatchMode = mode;
+            const modal = document.getElementById('batch-modal');
+            const title = document.getElementById('batch-modal-title');
+            const submitBtn = document.getElementById('batch-submit-btn');
+            const amtContainer = document.getElementById('batch-amount-input-container');
+
+            if (mode === 'amount') {
+                title.innerText = "金額一括入力（選択項目）";
+                submitBtn.innerText = "金額を一括適用";
+                submitBtn.className = "px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg text-xs shadow";
+                amtContainer.classList.remove('hidden');
+            } else {
+                title.innerText = "一括削除（選択項目）";
+                submitBtn.innerText = "選択項目を一括削除";
+                submitBtn.className = "px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs shadow";
+                amtContainer.classList.add('hidden');
+            }
+
+            renderBatchItems();
+            document.getElementById('batch-toggle-all').checked = true;
+            modal.classList.remove('hidden');
+        }
+
+        function closeBatchModal() {
+            document.getElementById('batch-modal').classList.add('hidden');
+        }
+
+        function renderBatchItems() {
+            const container = document.getElementById('batch-modal-items');
+            const place = document.getElementById('race-place').value;
+            const rNum = APP_STATE.raceNumber;
+            const currentRaceItems = APP_STATE.cart.filter(item => item.date === APP_STATE.currentDate && item.place === place && item.rNum === rNum);
+            if (!currentRaceItems.length) { container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">対象の買い目がありません</div>`; return; }
+            let html = '';
+            currentRaceItems.forEach(group => {
+                const groupIdx = APP_STATE.cart.findIndex(i => i.id === group.id);
+                const ticketInfo = TICKET_COLORS[group.ticket] || { bg: 'bg-gray-600', text: group.ticket };
+                if (group.compact && !group.displayExpanded) {
+                    html += `<div class="p-2 bg-white rounded-lg border border-gray-200 space-y-2">
+                        <label class="flex items-center gap-2 text-xs font-bold"><input type="checkbox" class="batch-group-checkbox w-4 h-4" data-group-idx="${groupIdx}" checked><span class="px-1.5 py-0.5 rounded text-[10px] text-white ${ticketInfo.bg}">${ticketInfo.text}</span><span>${group.combos.length}点をまとめて選択</span></label>
+                        ${renderCompactGroupSelection(group)}
+                        <div class="text-right"><button type="button" onclick="expandBatchGroup(${groupIdx})" class="text-sky-600 font-bold text-xs">展開する <i class="fa-solid fa-chevron-down"></i></button></div>
+                    </div>`;
+                } else {
+                    html += `<div class="p-2 bg-white rounded-lg border border-gray-200"><div class="flex items-center justify-between mb-1"><span class="text-xs font-bold">${ticketInfo.text}（${group.combos.length}点）</span>${group.compact ? `<button type="button" onclick="collapseCartGroup(${groupIdx}); renderBatchItems();" class="text-sky-600 font-bold text-xs">展開を閉じる</button>` : ''}</div>`;
+                    group.combos.forEach((combo, comboIdx) => {
+                        const item = group.items?.[comboIdx] || { amount: 1 };
+                        const comboStr = combo.map(num => `<span class="px-1.5 py-0.5 rounded bg-gray-100 font-bold">${num}</span>`).join('－');
+                        html += `<label class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200 text-xs my-1"><span class="flex items-center gap-2"><input type="checkbox" class="batch-item-checkbox w-4 h-4" data-group-idx="${groupIdx}" data-combo-idx="${comboIdx}" checked><span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-white ${ticketInfo.bg}">${ticketInfo.text}</span>${comboStr}</span><span class="font-bold">${(item.amount || 1) * 100}円</span></label>`;
+                    });
+                    html += `</div>`;
+                }
+            });
+            container.innerHTML = html;
+        }
+
+        function expandBatchGroup(groupIdx) {
+            const g = APP_STATE.cart[groupIdx];
+            if (g) g.displayExpanded = true;
+            renderBatchItems();
+            renderCartModalItems();
+        }
+
+        function toggleBatchAll(isChecked) {
+            const checkboxes = document.querySelectorAll('.batch-item-checkbox, .batch-group-checkbox');
+            checkboxes.forEach(cb => cb.checked = isChecked);
+        }
+
+        function executeBatchAction(skipExpansionConfirm = false) {
+            const itemChecks = [...document.querySelectorAll('.batch-item-checkbox:checked')];
+            const groupChecks = [...document.querySelectorAll('.batch-group-checkbox:checked')];
+            if (!itemChecks.length && !groupChecks.length) { alert("項目が選択されていません。"); return; }
+            const groupsNeedingDecomposition = [...new Set(itemChecks
+                .map(cb => parseInt(cb.dataset.groupIdx))
+                .filter(gIdx => APP_STATE.cart[gIdx]?.compact && !APP_STATE.cart[gIdx]?.isDecomposed))];
+            if (!skipExpansionConfirm && groupsNeedingDecomposition.length) {
+                pendingCartAction = () => {
+                    groupsNeedingDecomposition.forEach(gIdx => {
+                        if (APP_STATE.cart[gIdx]) {
+                            APP_STATE.cart[gIdx].isDecomposed = true;
+                            APP_STATE.cart[gIdx].displayExpanded = true;
+                        }
+                    });
+                    executeBatchAction(true);
+                };
+                document.getElementById('confirm-modal').classList.remove('hidden');
+                return;
+            }
+            if (currentBatchMode === 'amount') {
+                const targetAmount = Math.max(1, parseInt(document.getElementById('batch-input-amount').value) || 1);
+                groupChecks.forEach(cb => {
+                    const gIdx = parseInt(cb.dataset.groupIdx), group = APP_STATE.cart[gIdx];
+                    if (group) group.items = group.combos.map(combo => ({ combo: cloneData(combo), amount: targetAmount }));
+                });
+                itemChecks.forEach(cb => {
+                    const gIdx = parseInt(cb.dataset.groupIdx), cIdx = parseInt(cb.dataset.comboIdx);
+                    if (APP_STATE.cart[gIdx]?.items[cIdx]) APP_STATE.cart[gIdx].items[cIdx].amount = targetAmount;
+                });
+            } else if (currentBatchMode === 'delete') {
+                const deleteGroups = new Set(groupChecks.map(cb => parseInt(cb.dataset.groupIdx)));
+                const targets = itemChecks.map(cb => ({ gIdx: parseInt(cb.dataset.groupIdx), cIdx: parseInt(cb.dataset.comboIdx) }));
+                targets.sort((a,b) => a.gIdx === b.gIdx ? b.cIdx-a.cIdx : b.gIdx-a.gIdx).forEach(t => {
+                    if (APP_STATE.cart[t.gIdx] && !deleteGroups.has(t.gIdx)) {
+                        APP_STATE.cart[t.gIdx].combos.splice(t.cIdx,1); APP_STATE.cart[t.gIdx].items.splice(t.cIdx,1);
+                        APP_STATE.cart[t.gIdx].totalPoints = APP_STATE.cart[t.gIdx].combos.length;
+                        APP_STATE.cart[t.gIdx].totalAmount = (APP_STATE.cart[t.gIdx].items || []).reduce((sum, item) => sum + Math.max(1, Number(item.amount) || 1) * 100, 0);
+                    }
+                });
+                [...deleteGroups].sort((a,b)=>b-a).forEach(idx => { if (APP_STATE.cart[idx]) APP_STATE.cart.splice(idx,1); });
+                APP_STATE.cart = APP_STATE.cart.filter(g => g.combos.length > 0);
+            }
+            saveToLocalStorage(); updateCartBadge(); renderCartModalItems(); closeBatchModal();
+        }
+
+        function clearCurrentRaceResults() {
+            if (!confirm('このレースの結果入力をすべてクリアしますか？')) return;
+            const emptyResults = {
+                tansho: { horse: '', payout: '' },
+                fukusho: { horses: ['', '', ''], payouts: ['', '', ''] },
+                wakuren: { combo: '', payout: '' },
+                umaren: { combo: '', payout: '' },
+                wide: { combos: ['', '', ''], payouts: ['', '', ''] },
+                umatan: { combo: '', payout: '' },
+                sanrenfuku: { combo: '', payout: '' },
+                sanrentan: { combo: '', payout: '' }
+            };
+            setCurrentRaceResults(emptyResults);
+            saveToLocalStorage();
+            renderResultTable();
+        }
+
+        function renderResultTable() {
+            const tbody = document.getElementById('result-table-body');
+            tbody.innerHTML = '';
+            const tickets = [
+                { key: 'tansho', label: '単勝', bg: 'ticket-tansho' },
+                { key: 'fukusho', label: '複勝', bg: 'ticket-fukusho' },
+                { key: 'wakuren', label: '枠連', bg: 'ticket-wakuren' },
+                { key: 'umaren', label: '馬連', bg: 'ticket-umaren' },
+                { key: 'wide', label: 'ワイド', bg: 'ticket-wide' },
+                { key: 'umatan', label: '馬単', bg: 'ticket-umatan' },
+                { key: 'sanrenfuku', label: '3連複', bg: 'ticket-sanrenfuku' },
+                { key: 'sanrentan', label: '3連単', bg: 'ticket-sanrentan' }
+            ];
+
+            tickets.forEach((t) => {
+                if (t.key === 'fukusho') {
+                    for (let i = 0; i < 3; i++) {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-gray-50 transition";
+                        tr.innerHTML = `
+                            ${i === 0 ? `<td rowspan="3" class="font-bold py-2 px-1 border-r border-gray-200 ${t.bg} align-middle text-xs text-white">複勝</td>` : ''}
+                            <td class="py-1.5 px-2 border-r border-gray-200"><input type="text" data-ticket="fukusho" data-subidx="${i}" data-field="horse" value="${APP_STATE.results.fukusho.horses[i] || ''}" oninput="saveResultInput(this)" onkeydown="handleResultTableKeyNavigation(event, this)" class="w-full text-center border border-gray-300 rounded px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white shadow-sm result-input"></td>
+                            <td class="py-1.5 px-2"><input type="text" data-ticket="fukusho" data-subidx="${i}" data-field="payout" value="${APP_STATE.results.fukusho.payouts[i] || ''}" oninput="saveResultInput(this)" onkeydown="handleResultTableKeyNavigation(event, this)" class="w-full text-center border border-gray-300 rounded px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white shadow-sm result-input"></td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                } else if (t.key === 'wide') {
+                    for (let i = 0; i < 3; i++) {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-gray-50 transition";
+                        tr.innerHTML = `
+                            ${i === 0 ? `<td rowspan="3" class="font-bold py-2 px-1 border-r border-gray-200 ${t.bg} align-middle text-xs text-white">ワイド</td>` : ''}
+                            <td class="py-1.5 px-2 border-r border-gray-200"><input type="text" data-ticket="wide" data-subidx="${i}" data-field="combo" value="${APP_STATE.results.wide.combos[i] || ''}" oninput="saveResultInput(this)" onkeydown="handleResultTableKeyNavigation(event, this)" class="w-full text-center border border-gray-300 rounded px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white shadow-sm result-input"></td>
+                            <td class="py-1.5 px-2"><input type="text" data-ticket="wide" data-subidx="${i}" data-field="payout" value="${APP_STATE.results.wide.payouts[i] || ''}" oninput="saveResultInput(this)" onkeydown="handleResultTableKeyNavigation(event, this)" class="w-full text-center border border-gray-300 rounded px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white shadow-sm result-input"></td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                } else {
+                    const dataObj = APP_STATE.results[t.key];
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition";
+                    tr.innerHTML = `
+                        <td class="font-bold py-2 px-1 border-r border-gray-200 ${t.bg} align-middle text-xs text-white">${t.label}</td>
+                        <td class="py-1.5 px-2 border-r border-gray-200"><input type="text" data-ticket="${t.key}" data-field="horse" value="${dataObj.horse !== undefined ? dataObj.horse : (dataObj.combo || '')}" oninput="saveResultInput(this)" onkeydown="handleResultTableKeyNavigation(event, this)" class="w-full text-center border border-gray-300 rounded px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white shadow-sm result-input"></td>
+                        <td class="py-1.5 px-2"><input type="text" data-ticket="${t.key}" data-field="payout" value="${dataObj.payout || ''}" oninput="saveResultInput(this)" onkeydown="handleResultTableKeyNavigation(event, this)" class="w-full text-center border border-gray-300 rounded px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white shadow-sm result-input"></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+
+        function handleResultTableKeyNavigation(e, currentInput) {
+            const inputs = Array.from(document.querySelectorAll('.result-input'));
+            const idx = inputs.indexOf(currentInput);
+            if (idx === -1) return;
+
+            let targetIdx = null;
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                targetIdx = (idx + 1) % inputs.length;
+            } else if (e.key === 'ArrowRight') {
+                if (idx % 2 === 0) {
+                    e.preventDefault();
+                    targetIdx = idx + 1;
+                }
+            } else if (e.key === 'ArrowLeft') {
+                if (idx % 2 === 1) {
+                    e.preventDefault();
+                    targetIdx = idx - 1;
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (idx + 2 < inputs.length) targetIdx = idx + 2;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (idx - 2 >= 0) targetIdx = idx - 2;
+            }
+
+            if (targetIdx !== null && inputs[targetIdx]) {
+                inputs[targetIdx].focus();
+                inputs[targetIdx].select();
+            }
+        }
+
+        function saveResultInput(el) {
+            const ticket = el.getAttribute('data-ticket');
+            const field = el.getAttribute('data-field');
+            const subidx = el.getAttribute('data-subidx');
+            const val = el.value;
+
+            if (ticket === 'fukusho') {
+                if (field === 'horse') APP_STATE.results.fukusho.horses[subidx] = val;
+                else APP_STATE.results.fukusho.payouts[subidx] = val;
+            } else if (ticket === 'wide') {
+                if (field === 'combo') APP_STATE.results.wide.combos[subidx] = val;
+                else APP_STATE.results.wide.payouts[subidx] = val;
+            } else {
+                if (field === 'horse') {
+                    APP_STATE.results[ticket].combo = val;
+                    APP_STATE.results[ticket].horse = val;
+                } else {
+                    APP_STATE.results[ticket].payout = val;
+                }
+            }
+            setCurrentRaceResults(APP_STATE.results);
+            saveToLocalStorage();
+        }
+
+        function normalizeResultCombo(value, unordered = false) {
+            const nums = String(value || '').match(/\d+/g) || [];
+            return unordered ? nums.sort((a, b) => Number(a) - Number(b)).join('-') : nums.join('-');
+        }
+
+        function calculateRacePayout(record) {
+            let payoutTotal = 0;
+            const results = record.results || {};
+            const unorderedTickets = new Set(['wakuren', 'umaren', 'wide', 'sanrenfuku']);
+            (record.cart || []).forEach(group => {
+                const ticket = group.ticket;
+                const result = results[ticket];
+                if (!result) return;
+                (group.combos || []).forEach((combo, idx) => {
+                    const item = group.items?.[idx] || { amount: 1 };
+                    const stakeUnits = Number(item.amount) || 1;
+                    let matchedPayout = 0;
+                    if (ticket === 'fukusho') {
+                        const winning = (result.horses || []).map((h, i) => ({ combo: normalizeResultCombo(h), payout: parseInt(String(result.payouts?.[i] || '').replace(/,/g, ''), 10) || 0 }));
+                        const horse = normalizeResultCombo(combo[0]);
+                        matchedPayout = winning.find(x => x.combo === horse)?.payout || 0;
+                    } else if (ticket === 'wide') {
+                        const bet = normalizeResultCombo(combo, true);
+                        const winning = (result.combos || []).map((c, i) => ({ combo: normalizeResultCombo(c, true), payout: parseInt(String(result.payouts?.[i] || '').replace(/,/g, ''), 10) || 0 }));
+                        matchedPayout = winning.find(x => x.combo === bet)?.payout || 0;
+                    } else {
+                        const winningText = result.horse ?? result.combo ?? '';
+                        const bet = normalizeResultCombo(combo, unorderedTickets.has(ticket));
+                        const winning = normalizeResultCombo(winningText, unorderedTickets.has(ticket));
+                        matchedPayout = bet && bet === winning ? (parseInt(String(result.payout || '').replace(/,/g, ''), 10) || 0) : 0;
+                    }
+                    if (matchedPayout > 0) payoutTotal += matchedPayout * stakeUnits;
+                });
+            });
+            return payoutTotal;
+        }
+
+        async function calculateSummary() {
+            const type = APP_STATE.dateFilterType;
+            const targetDate = APP_STATE.currentDate;
+
+            let totalPurchase = 0;
+            let totalPayout = 0;
+
+            const records = await getAllHistoryRecords().catch(() => HISTORY_RECORDS);
+            HISTORY_RECORDS = records || [];
+            const merged = new Map(HISTORY_RECORDS.map(r => [r.key, r]));
+            const activePlace = document.getElementById('race-place')?.value || APP_STATE.racePlace || '';
+            const activeKey = raceKey(APP_STATE.currentDate, activePlace, APP_STATE.raceNumber);
+            const activeRecord = merged.get(activeKey) || { key: activeKey, date: APP_STATE.currentDate, place: activePlace, rNum: APP_STATE.raceNumber, cart: [], results: null };
+            activeRecord.results = cloneData(APP_STATE.results);
+            // 現在選択中のレースはlocalStorageの状態を正とし、削除も集計へ即時反映する。
+            activeRecord.cart = cloneData((APP_STATE.cart || []).filter(x =>
+                raceKey(x.date, x.place, x.rNum) === activeKey
+            ));
+            merged.set(activeKey, activeRecord);
+
+            for (const record of merged.values()) {
+                const date = record.date || '';
+                let match = false;
+                if (type === '日別') match = date === targetDate;
+                else if (type === '月別') match = date.slice(0, 7) === targetDate.slice(0, 7);
+                else if (type === '年別') match = date.slice(0, 4) === targetDate.slice(0, 4);
+                if (!match) continue;
+
+                if (!Number(record.horseCount)) {
+                    record.horseCount = Number(record.cart?.find(x => Number(x.horseCount))?.horseCount) || null;
+                }
+                const financials = buildRaceFinancials(record);
+                record.bets = financials.bets;
+                record.totalPurchase = financials.totalPurchase;
+                record.totalPayout = financials.totalPayout;
+                record.balance = financials.balance;
+                totalPurchase += record.totalPurchase;
+                totalPayout += record.totalPayout;
+            }
+
+            document.getElementById('summary-purchase-display').innerText = `${totalPurchase.toLocaleString()}円`;
+            document.getElementById('summary-payout-display').innerText = `${totalPayout.toLocaleString()}円`;
+            const net = totalPayout - totalPurchase;
+            document.getElementById('balance-total-display').innerText = `${net.toLocaleString()} 円`;
+        }
+
+        function parseAiResultText() {
+            const text = document.getElementById('ai-result-textarea').value;
+            if (!text.trim()) {
+                alert("解析するテキストを入力してください。");
+                return;
+            }
+
+            APP_STATE.results = {
+                tansho: { horse: "", payout: "" },
+                fukusho: { horses: ["", "", ""], payouts: ["", "", ""] },
+                wakuren: { combo: "", payout: "" },
+                umaren: { combo: "", payout: "" },
+                wide: { combos: ["", "", ""], payouts: ["", "", ""] },
+                umatan: { combo: "", payout: "" },
+                sanrenfuku: { combo: "", payout: "" },
+                sanrentan: { combo: "", payout: "" }
+            };
+
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            let currentTicket = null;
+            let fukushoHorseIdx = 0;
+            let fukushoPayoutIdx = 0;
+            let wideComboIdx = 0;
+            let widePayoutIdx = 0;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+
+                if (line.includes('単勝')) { currentTicket = 'tansho'; line = line.replace(/.*?単勝/, '').trim(); }
+                else if (line.includes('複勝')) { currentTicket = 'fukusho'; line = line.replace(/.*?複勝/, '').trim(); }
+                else if (line.includes('枠連')) { currentTicket = 'wakuren'; line = line.replace(/.*?[-\s]*枠連/, '').trim(); }
+                else if (line.includes('馬連')) { currentTicket = 'umaren'; line = line.replace(/.*?[-\s]*馬連/, '').trim(); }
+                else if (line.includes('ワイド')) { currentTicket = 'wide'; line = line.replace(/.*?[-\s]*ワイド/, '').trim(); }
+                else if (line.includes('馬単')) { currentTicket = 'umatan'; line = line.replace(/.*?[-\s]*馬単/, '').trim(); }
+                else if (line.includes('3連複') || line.includes('三連複')) { currentTicket = 'sanrenfuku'; line = line.replace(/.*?[-\s]*(3連複|三連複)/, '').trim(); }
+                else if (line.includes('3連単') || line.includes('三連単')) { currentTicket = 'sanrentan'; line = line.replace(/.*?[-\s]*(3連単|三連単)/, '').trim(); }
+
+                if (!line && i < lines.length - 1) continue;
+
+                const moneyMatch = line.match(/([0-9,]+)\s*円/);
+                if (moneyMatch) {
+                    const payoutVal = moneyMatch[1];
+                    if (currentTicket === 'fukusho') {
+                        if (fukushoPayoutIdx < 3) APP_STATE.results.fukusho.payouts[fukushoPayoutIdx++] = payoutVal;
+                    } else if (currentTicket === 'wide') {
+                        if (widePayoutIdx < 3) APP_STATE.results.wide.payouts[widePayoutIdx++] = payoutVal;
+                    } else if (currentTicket) {
+                        APP_STATE.results[currentTicket].payout = payoutVal;
+                    }
+                    continue;
+                }
+
+                if (line.includes('人気')) continue;
+
+                const comboMatch = line.match(/^[-–—\s]*([0-9]{1,2}(?:[\s\-–—]+[0-9]{1,2})*)/);
+                if (comboMatch) {
+                    let numStr = comboMatch[1].trim();
+                    numStr = numStr.replace(/[\s\-–—]+/g, '-');
+
+                    if (currentTicket === 'fukusho') {
+                        if (fukushoHorseIdx < 3) APP_STATE.results.fukusho.horses[fukushoHorseIdx++] = numStr;
+                    } else if (currentTicket === 'wide') {
+                        if (wideComboIdx < 3) APP_STATE.results.wide.combos[wideComboIdx++] = numStr;
+                    } else if (currentTicket) {
+                        APP_STATE.results[currentTicket].horse = numStr;
+                        APP_STATE.results[currentTicket].combo = numStr;
+                    }
+                }
+            }
+
+            renderResultTable();
+            saveToLocalStorage();
+            alert("結果データを自動解析・入力しました。");
+        }
+
+        function openExportModal() {
+            document.getElementById('export-modal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('export-modal').classList.add('hidden');
+        }
+
+        function exportFromModal(format) {
+            closeExportModal();
+            exportData(format);
+        }
+
+        let HISTORY_EDITOR_RECORDS = [];
+
+        async function openHistoryEditor() {
+            try {
+                // 先に当日作業中のlocalStorageデータも履歴DBへ反映して一覧に含める
+                await archiveState(APP_STATE);
+                HISTORY_EDITOR_RECORDS = await getAllHistoryRecords();
+                const dates = [...new Set(HISTORY_EDITOR_RECORDS.map(r => r.date).filter(Boolean))].sort().reverse();
+                const dateSelect = document.getElementById('history-editor-date');
+                const placeSelect = document.getElementById('history-editor-place');
+                if (!dates.length) {
+                    dateSelect.innerHTML = '';
+                    placeSelect.innerHTML = '';
+                    document.getElementById('history-editor-items').innerHTML =
+                        '<div class="text-center py-12 text-gray-400 text-sm font-bold">編集できる買い目記録がありません</div>';
+                    document.getElementById('history-editor-summary').innerText = '合計 0円';
+                } else {
+                    dateSelect.innerHTML = dates.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+                    const preferredDate = dates.includes(APP_STATE.currentDate) ? APP_STATE.currentDate : dates[0];
+                    dateSelect.value = preferredDate;
+                    populateHistoryEditorPlaces();
+                }
+                document.getElementById('history-editor-modal').classList.remove('hidden');
+            } catch (err) {
+                console.error('記録編集画面の読み込みに失敗:', err);
+                alert('記録の読み込みに失敗しました。');
+            }
+        }
+
+        function closeHistoryEditor() {
+            document.getElementById('history-editor-modal').classList.add('hidden');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
+        function populateHistoryEditorPlaces() {
+            const date = document.getElementById('history-editor-date').value;
+            const places = [...new Set(HISTORY_EDITOR_RECORDS
+                .filter(r => r.date === date)
+                .map(r => r.place).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja'));
+            const select = document.getElementById('history-editor-place');
+            const previous = select.value;
+            select.innerHTML = places.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            if (places.includes(previous)) select.value = previous;
+            renderHistoryEditor();
+        }
+
+        function getHistoryEditorSelection() {
+            const date = document.getElementById('history-editor-date').value;
+            const place = document.getElementById('history-editor-place').value;
+            return HISTORY_EDITOR_RECORDS
+                .filter(r => r.date === date && r.place === place)
+                .sort((a, b) => Number(a.rNum) - Number(b.rNum));
+        }
+
+        function renderHistoryEditor() {
+            const date = document.getElementById('history-editor-date').value;
+            const placeSelect = document.getElementById('history-editor-place');
+            if (date) {
+                const validPlaces = [...new Set(HISTORY_EDITOR_RECORDS.filter(r => r.date === date).map(r => r.place).filter(Boolean))];
+                if (!validPlaces.includes(placeSelect.value)) {
+                    populateHistoryEditorPlaces();
+                    return;
+                }
+            }
+            const records = getHistoryEditorSelection();
+            const container = document.getElementById('history-editor-items');
+            if (!records.length) {
+                container.innerHTML = '<div class="text-center py-12 text-gray-400 text-sm font-bold">この日付・レース場の買い目記録はありません</div>';
+                document.getElementById('history-editor-summary').innerText = '合計 0円';
+                return;
+            }
+
+            let total = 0;
+            container.innerHTML = records.map(record => {
+                const financials = buildRaceFinancials(record);
+                total += financials.totalPurchase;
+                const groupsHtml = (record.cart || []).map((group, gi) => {
+                    const ticketInfo = TICKET_COLORS[group.ticket] || { bg: 'bg-gray-600', text: group.ticket || '券種' };
+                    const modeText = group.subMode === 'individual' ? '個別' :
+                        (group.subMode === 'formation' ? 'フォーメーション' :
+                        (group.subMode === 'box' ? 'ボックス' : 'ながし'));
+                    const combosHtml = (group.combos || []).map((combo, ci) => {
+                        const units = Math.max(1, Number(group.items?.[ci]?.amount) || 1);
+                        const comboHtml = Array.isArray(combo) ? combo.map(num => {
+                            const frameNo = getFrameNumber(num, group.horseCount);
+                            const frameStyle = FRAME_COLORS[frameNo - 1] || FRAME_COLORS[0];
+                            return `<span class="w-5 h-5 flex items-center justify-center rounded ${frameStyle.bg} font-bold text-[10px] shadow-sm">${escapeHtml(num)}</span>`;
+                        }).join('<span class="text-gray-400 font-bold px-0.5 text-xs">-</span>') : escapeHtml(combo);
+                        return `<div class="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-white rounded-lg border border-gray-200 shadow-sm text-xs my-1">
+                            <div class="flex items-center gap-1">${comboHtml}</div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <input type="number" min="1" step="1" value="${units}"
+                                    onchange="editHistoryAmount('${escapeHtml(record.key)}', ${gi}, ${ci}, this.value)"
+                                    class="w-16 text-right border border-gray-300 rounded px-1.5 py-1 text-xs font-bold">
+                                <span class="text-[11px] text-gray-600">00円</span>
+                                <button type="button" onclick="deleteHistoryCombo('${escapeHtml(record.key)}', ${gi}, ${ci})"
+                                    class="ml-1 text-gray-400 hover:text-red-600 px-1" title="この買い目を削除"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>`;
+                    }).join('');
+                    const groupCost = (group.combos || []).reduce((sum, _, ci) =>
+                        sum + Math.max(1, Number(group.items?.[ci]?.amount) || 1) * 100, 0);
+                    return `<section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="flex items-center justify-between px-4 py-2 border-b border-gray-100 ${ticketInfo.bg}">
+                            <span class="font-bold text-xs text-white">${escapeHtml(ticketInfo.text)} (${modeText})</span>
+                            <button type="button" onclick="deleteHistoryGroup('${escapeHtml(record.key)}', ${gi})"
+                                class="text-white/90 hover:text-white text-xs p-1 flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> 組ごと削除</button>
+                        </div>
+                        <div class="p-3 space-y-1 bg-gray-50/50">${combosHtml || '<p class="text-xs text-gray-400">買い目なし</p>'}</div>
+                        <div class="flex items-center justify-between px-4 py-2 bg-gray-50 border-t border-gray-100">
+                            <span class="text-xs font-bold text-gray-500">${(group.combos || []).length}点</span>
+                            <span class="text-sm font-black text-gray-800">${groupCost.toLocaleString()}円</span>
+                        </div>
+                    </section>`;
+                }).join('');
+                return `<div class="space-y-2">
+                    <div class="flex items-center justify-between px-1">
+                        <h4 class="font-black text-sm text-gray-800">${escapeHtml(record.rNum)}R</h4>
+                        <span class="text-xs font-bold text-gray-600">購入合計 ${financials.totalPurchase.toLocaleString()}円</span>
+                    </div>
+                    ${groupsHtml || '<div class="text-xs text-gray-400 bg-white rounded-lg p-4">このレースの買い目はありません</div>'}
+                    <div class="border-b-2 border-gray-200 pt-2"></div>
+                </div>`;
+            }).join('');
+            document.getElementById('history-editor-summary').innerText = `選択日の購入合計 ${total.toLocaleString()}円`;
+        }
+
+        async function persistHistoryEditorRecord(record) {
+            const financials = buildRaceFinancials(record);
+            record.bets = financials.bets;
+            record.totalPurchase = financials.totalPurchase;
+            record.totalPayout = financials.totalPayout;
+            record.balance = financials.balance;
+
+            // IndexedDBの記録を更新
+            await putHistoryRecord(record);
+
+            // 当日作業中のレースならlocalStorage側も同じ内容に同期する
+            const activePlace = document.getElementById('race-place')?.value || APP_STATE.racePlace || '';
+            const activeKey = raceKey(APP_STATE.currentDate, activePlace, APP_STATE.raceNumber);
+            if (record.key === activeKey) {
+                APP_STATE.cart = APP_STATE.cart.filter(x => raceKey(x.date, x.place, x.rNum) !== record.key)
+                    .concat(cloneData(record.cart || []));
+                if (record.results) {
+                    APP_STATE.raceResults = APP_STATE.raceResults || {};
+                    APP_STATE.raceResults[record.key] = cloneData(record.results);
+                    APP_STATE.results = cloneData(record.results);
+                }
+                localStorage.setItem('sim_last_date', new Date().toISOString().split('T')[0]);
+                localStorage.setItem('sim_app_state', JSON.stringify(APP_STATE));
+                updateCartBadge();
+            }
+
+            HISTORY_RECORDS = await getAllHistoryRecords();
+            HISTORY_EDITOR_RECORDS = cloneData(HISTORY_RECORDS);
+            await calculateSummary();
+            renderHistoryEditor();
+        }
+
+        async function editHistoryAmount(key, groupIndex, comboIndex, value) {
+            const record = HISTORY_EDITOR_RECORDS.find(r => r.key === key);
+            if (!record || !record.cart?.[groupIndex]?.combos?.[comboIndex]) return;
+            const units = Math.max(1, parseInt(value, 10) || 1);
+            record.cart[groupIndex].items = record.cart[groupIndex].items || [];
+            record.cart[groupIndex].items[comboIndex] = record.cart[groupIndex].items[comboIndex] || {};
+            record.cart[groupIndex].items[comboIndex].amount = units;
+            await persistHistoryEditorRecord(record);
+        }
+
+        async function deleteHistoryCombo(key, groupIndex, comboIndex) {
+            const record = HISTORY_EDITOR_RECORDS.find(r => r.key === key);
+            if (!record || !record.cart?.[groupIndex]) return;
+            if (!confirm('この買い目を削除しますか？')) return;
+            record.cart[groupIndex].combos.splice(comboIndex, 1);
+            if (record.cart[groupIndex].items) record.cart[groupIndex].items.splice(comboIndex, 1);
+            record.cart[groupIndex].totalPoints = record.cart[groupIndex].combos.length;
+            if (!record.cart[groupIndex].combos.length) record.cart.splice(groupIndex, 1);
+            await persistHistoryEditorRecord(record);
+        }
+
+        async function deleteHistoryGroup(key, groupIndex) {
+            const record = HISTORY_EDITOR_RECORDS.find(r => r.key === key);
+            if (!record || !record.cart?.[groupIndex]) return;
+            if (!confirm('この買い目グループをすべて削除しますか？')) return;
+            record.cart.splice(groupIndex, 1);
+            await persistHistoryEditorRecord(record);
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file-input').click();
+        }
+
+        // CSVのセルを安全に分解する（引用符内のカンマ・改行・二重引用符に対応）
+        function parseCSV(text) {
+            const rows = [];
+            let row = [], cell = '', quoted = false;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                if (quoted) {
+                    if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+                    else if (ch === '"') quoted = false;
+                    else cell += ch;
+                } else if (ch === '"') quoted = true;
+                else if (ch === ',') { row.push(cell); cell = ''; }
+                else if (ch === '\n') { row.push(cell.replace(/\r$/, '')); rows.push(row); row = []; cell = ''; }
+                else cell += ch;
+            }
+            if (cell.length || row.length) { row.push(cell.replace(/\r$/, '')); rows.push(row); }
+            return rows;
+        }
+
+        function csvEscape(value) {
+            const text = value == null ? '' : String(value);
+            return '"' + text.replace(/"/g, '""') + '"';
+        }
+
+        function recordsFromCSV(csvText) {
+            const rows = parseCSV(csvText.replace(/^\uFEFF/, ''));
+            if (rows.length < 2) throw new Error('CSVにデータ行がありません');
+            const headers = rows[0].map(x => x.trim());
+            const recordIndex = headers.indexOf('record_json');
+            if (recordIndex < 0) throw new Error('このアプリで出力したCSV形式ではありません（record_json列がありません）');
+            const unique = new Map();
+            rows.slice(1).forEach(row => {
+                const raw = row[recordIndex];
+                if (!raw) return;
+                const record = JSON.parse(raw);
+                if (!record.key || !record.date || !Array.isArray(record.cart)) throw new Error('CSV内のレース記録が不正です');
+                unique.set(record.key, record);
+            });
+            if (!unique.size) throw new Error('読み込めるレース記録がありません');
+            return Array.from(unique.values());
+        }
+
+        function recordsFromLegacyJSON(data) {
+            if (data && data.format === 'keiba-history-v2' && Array.isArray(data.records)) return data.records;
+            if (data && Array.isArray(data.cart)) {
+                const tempState = { ...data, raceResults: data.raceResults || {} };
+                if (!Object.keys(tempState.raceResults).length && data.results && data.currentDate) {
+                    const legacyKey = raceKey(data.currentDate, data.racePlace || '', data.raceNumber || 1);
+                    tempState.raceResults[legacyKey] = data.results;
+                }
+                const grouped = new Map();
+                tempState.cart.forEach(item => {
+                    const key = raceKey(item.date, item.place, item.rNum);
+                    if (!grouped.has(key)) grouped.set(key, { key, date: item.date, place: item.place, rNum: item.rNum, horseCount: Number(state.raceHorseCounts?.[key]) || Number(item.horseCount) || null, cart: [], results: null });
+                    if (!grouped.get(key).horseCount && Number(item.horseCount)) grouped.get(key).horseCount = Number(item.horseCount);
+                    grouped.get(key).cart.push(item);
+                });
+                Object.entries(tempState.raceResults).forEach(([key, results]) => {
+                    const [date, place, rNum] = key.split('|');
+                    if (!grouped.has(key)) grouped.set(key, { key, date, place, rNum: Number(rNum), horseCount: Number(tempState.horseCount) || null, cart: [], results });
+                    else grouped.get(key).results = results;
+                });
+                if (!grouped.size) throw new Error('買い目・収支データがありません');
+                return Array.from(grouped.values());
+            }
+            throw new Error('対応していないJSON形式です');
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file-input').click();
+        }
+
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const content = String(e.target.result || '').replace(/^\uFEFF/, '');
+                    let importedRecords;
+                    if (/\.csv$/i.test(file.name) || !/^\s*[\[{]/.test(content)) {
+                        importedRecords = recordsFromCSV(content);
+                    } else {
+                        importedRecords = recordsFromLegacyJSON(JSON.parse(content));
+                    }
+                    if (!confirm('インポートした記録を既存の履歴に統合します。同じレースは読み込んだデータで更新します。よろしいですか？')) return;
+
+                    for (const incoming of importedRecords) {
+                        if (!incoming.key || !incoming.date || !Array.isArray(incoming.cart)) throw new Error('レース記録の形式が不正です');
+                        const existing = HISTORY_RECORDS.find(r => r.key === incoming.key);
+                        const record = { ...incoming, cart: incoming.cart || [] };
+                        if (!Number(record.horseCount)) record.horseCount = Number(record.cart.find(x => Number(x.horseCount))?.horseCount) || null;
+                        if (existing && !record.results) record.results = existing.results || null;
+                        const financials = buildRaceFinancials(record);
+                        record.bets = financials.bets;
+                        record.totalPurchase = financials.totalPurchase;
+                        record.totalPayout = financials.totalPayout;
+                        record.balance = financials.balance;
+                        await putHistoryRecord(record);
+                    }
+                    HISTORY_RECORDS = await getAllHistoryRecords();
+                    const currentKey = raceKey(APP_STATE.currentDate, document.getElementById('race-place').value || APP_STATE.racePlace, APP_STATE.raceNumber);
+                    const currentRecord = HISTORY_RECORDS.find(r => r.key === currentKey);
+                    if (currentRecord) {
+                        APP_STATE.cart = APP_STATE.cart.filter(x => raceKey(x.date, x.place, x.rNum) !== currentKey).concat(currentRecord.cart || []);
+                        if (currentRecord.results) {
+                            APP_STATE.results = cloneData(currentRecord.results);
+                            APP_STATE.raceResults = APP_STATE.raceResults || {};
+                            APP_STATE.raceResults[currentKey] = cloneData(currentRecord.results);
+                        }
+                    }
+                    saveToLocalStorage();
+                    renderResultTable();
+                    updateCartBadge();
+                    await calculateSummary();
+                    alert(`${importedRecords.length}レース分の記録を統合しました。`);
+                } catch(err) {
+                    console.error('インポートエラー:', err);
+                    alert('インポートに失敗しました。ファイル形式または内容を確認してください。');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.onerror = () => { alert('ファイルの読み込みに失敗しました。'); event.target.value = ''; };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function isBlankResultValue(value) {
+            if (value === null || value === undefined) return true;
+            const text = String(value).trim();
+            return text === '' || text.toLowerCase() === 'null';
+        }
+
+        function isZeroResultValue(value) {
+            if (isBlankResultValue(value)) return true;
+            const normalized = String(value).replace(/,/g, '').trim();
+            return Number(normalized) === 0;
+        }
+
+        function hasResultPair(result, valueKey, payoutKey) {
+            return !!result && !isBlankResultValue(result[valueKey]) &&
+                !isBlankResultValue(result[payoutKey]) &&
+                Number(String(result[payoutKey]).replace(/,/g, '')) >= 0;
+        }
+
+        function validateRaceResultRecord(record) {
+            const errors = [];
+            const results = record.results || {};
+            const horseCount = Number(record.horseCount) ||
+                Number(record.cart?.find(x => Number(x.horseCount))?.horseCount) || 0;
+            const raceLabel = `${record.date || '日付不明'} ${record.place || '競馬場不明'} ${record.rNum || '?'}R`;
+
+            if (!horseCount) {
+                errors.push(`${raceLabel}：出走頭数が未登録です`);
+                return errors;
+            }
+
+            // 単勝
+            if (!hasResultPair(results.tansho, 'horse', 'payout')) {
+                errors.push(`${raceLabel}：単勝の着順・払戻金が未入力です`);
+            }
+
+            // 複勝：通常は3頭。7頭以下の場合のみ3頭目を省略可能
+            const fukusho = results.fukusho || {};
+            const fukushoHorses = fukusho.horses || [];
+            const fukushoPayouts = fukusho.payouts || [];
+            const fukushoRequired = horseCount <= 7 ? 2 : 3;
+            for (let i = 0; i < fukushoRequired; i++) {
+                if (isBlankResultValue(fukushoHorses[i]) || isBlankResultValue(fukushoPayouts[i])) {
+                    errors.push(`${raceLabel}：複勝${i + 1}頭目の馬番・払戻金が未入力です`);
+                }
+            }
+            if (horseCount <= 7) {
+                const thirdHorse = fukushoHorses[2];
+                const thirdPayout = fukushoPayouts[2];
+                const thirdIsEmptyOrZero = isBlankResultValue(thirdHorse) || String(thirdHorse).trim() === '0';
+                const thirdPayoutIsEmptyOrZero = isZeroResultValue(thirdPayout);
+                if (!(thirdIsEmptyOrZero && thirdPayoutIsEmptyOrZero) &&
+                    (isBlankResultValue(thirdHorse) || isBlankResultValue(thirdPayout))) {
+                    errors.push(`${raceLabel}：複勝3頭目は省略する場合、馬番・払戻金を空欄または0にしてください`);
+                }
+            }
+
+            // 枠連：8頭以下は発売対象外のため、0-0／払戻金0または空欄を許容
+            const wakuren = results.wakuren || {};
+            if (horseCount <= 8) {
+                const combo = wakuren.combo;
+                const payout = wakuren.payout;
+                const comboIsEmptyOrZero = isBlankResultValue(combo) || String(combo).trim() === '0-0' || String(combo).trim() === '0';
+                const payoutIsEmptyOrZero = isZeroResultValue(payout);
+                if (!(comboIsEmptyOrZero && payoutIsEmptyOrZero) &&
+                    (isBlankResultValue(combo) || isBlankResultValue(payout))) {
+                    errors.push(`${raceLabel}：8頭以下の枠連は省略する場合、組み合わせを0-0、払戻金を0または空欄にしてください`);
+                }
+            } else if (!hasResultPair(wakuren, 'combo', 'payout')) {
+                errors.push(`${raceLabel}：枠連の組み合わせ・払戻金が未入力です`);
+            }
+
+            // その他の券種
+            const pairTickets = [
+                ['umaren', '馬連'], ['umatan', '馬単'],
+                ['sanrenfuku', '三連複'], ['sanrentan', '三連単']
+            ];
+            pairTickets.forEach(([key, label]) => {
+                const result = results[key] || {};
+                const value = result.combo ?? result.horse;
+                if (isBlankResultValue(value) || isBlankResultValue(result.payout)) {
+                    errors.push(`${raceLabel}：${label}の組み合わせ・払戻金が未入力です`);
+                }
+            });
+
+            // ワイドは最大3組の的中組み合わせと払戻金を確認
+            const wide = results.wide || {};
+            for (let i = 0; i < 3; i++) {
+                if (isBlankResultValue(wide.combos?.[i]) || isBlankResultValue(wide.payouts?.[i])) {
+                    errors.push(`${raceLabel}：ワイド${i + 1}組目の組み合わせ・払戻金が未入力です`);
+                }
+            }
+
+            return errors;
+        }
+
+        function findIncompleteRaceResults(records) {
+            const errors = [];
+            (records || []).forEach(record => {
+                const hasBets = (record.cart || []).some(group => (group.combos || []).length > 0) ||
+                    (record.bets || []).length > 0;
+                if (hasBets) errors.push(...validateRaceResultRecord(record));
+            });
+            return errors;
+        }
+
+        async function exportData(format = 'json') {
+            try {
+                await archiveState(APP_STATE);
+                const records = await getAllHistoryRecords();
+                const incompleteResults = findIncompleteRaceResults(records);
+                if (incompleteResults.length > 0) {
+                    const displayErrors = incompleteResults.slice(0, 15);
+                    const remaining = incompleteResults.length - displayErrors.length;
+                    alert(
+                        'エクスポートできません。以下のレースで結果が未入力、または不完全です。\n\n' +
+                        displayErrors.join('\n') +
+                        (remaining > 0 ? `\nほか${remaining}件あります。` : '') +
+                        '\n\n結果と払戻金を入力してから、再度エクスポートしてください。'
+                    );
+                    return;
+                }
+                let blob, filename;
+                if (format === 'csv') {
+                    // 1行=1買い目の組み合わせ。record_json列に完全なレースデータを保持するため再インポート時も情報を失わない。
+                    const headers = ['日付', '競馬場', 'R番号', '出走頭数', '券種', '買い目', '購入金額(円)', 'レース購入合計(円)', '払戻合計(円)', '収支(円)', 'record_json'];
+                    const lines = [headers.map(csvEscape).join(',')];
+                    const ticketNames = { tansho: '単勝', fukusho: '複勝', wakuren: '枠連', umaren: '馬連', wide: 'ワイド', umatan: '馬単', sanrenfuku: '三連複', sanrentan: '三連単' };
+                    records.forEach(record => {
+                        const recordJSON = JSON.stringify(record);
+                        let wrote = false;
+                        (record.cart || []).forEach(group => {
+                            (group.combos || []).forEach((combo, idx) => {
+                                wrote = true;
+                                const units = Math.max(1, Number(group.items?.[idx]?.amount) || 1);
+                                const amount = units * 100;
+                                const values = [record.date, record.place, record.rNum, record.horseCount || group.horseCount || '', ticketNames[group.ticket] || group.ticket, Array.isArray(combo) ? combo.join('-') : combo, amount, record.totalPurchase ?? buildRaceFinancials(record).totalPurchase, record.totalPayout ?? buildRaceFinancials(record).totalPayout, record.balance ?? buildRaceFinancials(record).balance, recordJSON];
+                                lines.push(values.map(csvEscape).join(','));
+                            });
+                        });
+                        if (!wrote) {
+                            const financials = buildRaceFinancials(record);
+                            lines.push([record.date, record.place, record.rNum, record.horseCount || '', '', '', '', financials.totalPurchase, financials.totalPayout, financials.balance, recordJSON].map(csvEscape).join(','));
+                        }
+                    });
+                    blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+                    filename = `kaime_history_${APP_STATE.currentDate}.csv`;
+                } else {
+                    const payload = { format: 'keiba-history-v2', exportedAt: new Date().toISOString(), records };
+                    blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                    filename = `kaime_history_${APP_STATE.currentDate}.json`;
+                }
+                const url = URL.createObjectURL(blob);
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.href = url;
+                downloadAnchor.download = filename;
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('エクスポートエラー:', err);
+                alert('履歴のエクスポートに失敗しました。');
+            }
+        }
+
+    </script>
+</body>
+</html>
