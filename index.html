@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>競馬予想集計システム</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style_isolated.css">
 </head>
 <body>
     <div class="header-container">
@@ -13,8 +13,10 @@
             <button id="btn-chuo" class="btn-toggle active">中央競馬</button>
             <button id="btn-chiho" class="btn-toggle" disabled title="地方競馬は現在準備中です">地方競馬</button>
         </div>
+        <button id="btn-practice" class="btn-practice-nav" type="button">予想練習</button>
     </div>
 
+    <div id="prediction-page">
     <div class="main-layout">
         <!-- ブロックⅠ: 現在予想しているレース -->
         <section class="block block-1">
@@ -304,6 +306,9 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    </div><!-- /#prediction-page -->
+    <iframe id="practice-frame" title="予想練習" src="practice_isolated.html" hidden></iframe>
+    <script src="script_original.js"></script>
+    <script src="navigation_isolated.js"></script>
 </body>
 </html>
