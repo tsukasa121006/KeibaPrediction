@@ -112,9 +112,9 @@
             </div>
 
             <!-- サブ方式タブ -->
-            <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm">
-                <div id="sub-mode-buttons" class="flex gap-2"></div>
-                <div id="extra-options" class="flex items-center gap-3"></div>
+            <div class="flex flex-col items-start bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm gap-2">
+                <div id="sub-mode-buttons" class="flex flex-wrap gap-2"></div>
+                <div id="extra-options" class="flex items-center justify-start w-full"></div>
             </div>
 
             <!-- 3連単・馬単 ながし指定サブナビ -->
@@ -239,6 +239,11 @@
                     <button type="button" onclick="clearCurrentRaceResults()" class="px-3 py-1 border border-red-400 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold transition">クリア</button>
                 </div>
                 
+                <div id="current-race-financials" class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs font-bold">
+                    <span>購入金額 <span id="current-race-purchase">0円</span></span>
+                    <span>払戻金額 <span id="current-race-payout">0円</span></span>
+                    <span>収支 <span id="current-race-balance">0円</span></span>
+                </div>
                 <div class="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
                     <table class="w-full text-xs text-center border-collapse">
                         <thead>
@@ -254,8 +259,11 @@
 
                 <div class="space-y-1.5 pt-2">
                     <label class="block text-xs font-bold text-gray-600">結果自動入力</label>
-                    <textarea id="ai-result-textarea" rows="6" placeholder="オッズ・払戻テキストをそのまま貼り付けてください..." class="w-full border border-gray-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none font-mono"></textarea>
-                    <button type="button" onclick="parseAiResultText()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-xs shadow transition">自動入力</button>
+                    <textarea id="ai-result-textarea" rows="6" onfocus="this.select()" onclick="this.select()" placeholder="オッズ・払戻テキストをそのまま貼り付けてください..." class="w-full border border-gray-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none font-mono"></textarea>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="parseAiResultText()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-lg text-xs shadow transition">自動入力</button>
+                        <button type="button" onclick="clearAiResultText()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 font-bold py-2 rounded-lg text-xs transition">入力欄クリア</button>
+                    </div>
                 </div>
             </div>
 
@@ -550,6 +558,24 @@
             APP_STATE.raceHorseCounts[getActiveRaceKey(APP_STATE.currentDate, place, APP_STATE.raceNumber)] = Number(APP_STATE.horseCount) || 18;
         }
 
+        function getPaddockSyncedHorseCount() {
+            try {
+                const raw = localStorage.getItem('keiba-yosou-data-v8');
+                if (!raw) return null;
+                const data = JSON.parse(raw);
+                // 予想集計側は当日データのみを保持するため、日付が一致する場合だけ同期する。
+                if (data.savedDate !== APP_STATE.currentDate) return null;
+                const place = APP_STATE.racePlace || document.getElementById('race-place')?.value || '';
+                if (!place || !APP_STATE.raceNumber) return null;
+                const raceData = data.races?.[`${place}_${APP_STATE.raceNumber}`];
+                const count = Number(raceData?.paddock?.horseCount);
+                return Number.isInteger(count) && count >= 5 && count <= 18 ? count : null;
+            } catch (error) {
+                console.warn('予想集計の頭数同期に失敗しました:', error);
+                return null;
+            }
+        }
+
         function loadActiveHorseCount() {
             APP_STATE.raceHorseCounts = APP_STATE.raceHorseCounts || {};
             const key = getActiveRaceKey();
@@ -558,7 +584,8 @@
             const cartSaved = Number(APP_STATE.cart?.find(item => item.date === APP_STATE.currentDate && item.place === (APP_STATE.racePlace || document.getElementById('race-place')?.value || '') && Number(item.rNum) === Number(APP_STATE.raceNumber) && Number(item.horseCount))?.horseCount);
             const localSaved = Number(APP_STATE.raceHorseCounts[key]);
             const historySaved = Number(historyRecord?.horseCount) || Number(historyRecord?.cart?.find(x => Number(x.horseCount))?.horseCount);
-            const candidates = [cartSaved, localSaved, historySaved];
+            const paddockSynced = getPaddockSyncedHorseCount();
+            const candidates = [paddockSynced, cartSaved, localSaved, historySaved];
             const saved = candidates.find(value => Number.isInteger(value) && value >= 5 && value <= 18) || 18;
             APP_STATE.horseCount = saved;
             const select = document.getElementById('horse-count');
@@ -570,6 +597,17 @@
             const key = raceKey(APP_STATE.currentDate, place, APP_STATE.raceNumber);
             const saved = APP_STATE.raceResults?.[key] || HISTORY_RECORDS.find(r => r.key === key)?.results;
             return saved ? saved : { tansho: { horse: '', payout: '' }, fukusho: { horses: ['', '', ''], payouts: ['', '', ''] }, wakuren: { combo: '', payout: '' }, umaren: { combo: '', payout: '' }, wide: { combos: ['', '', ''], payouts: ['', '', ''] }, umatan: { combo: '', payout: '' }, sanrenfuku: { combo: '', payout: '' }, sanrentan: { combo: '', payout: '' } };
+        }
+
+        // 選択中レースの買い目を履歴DBから読み込む。結果だけでなく買い目もレース切替時に復元する。
+        function loadActiveRaceCart() {
+            const place = document.getElementById('race-place')?.value || APP_STATE.racePlace || '';
+            const key = raceKey(APP_STATE.currentDate, place, APP_STATE.raceNumber);
+            const record = HISTORY_RECORDS.find(r => r.key === key);
+            APP_STATE.cart = (APP_STATE.cart || []).filter(item =>
+                raceKey(item.date, item.place, item.rNum) !== key
+            ).concat(cloneData(record?.cart || []));
+            return record || null;
         }
 
         function setCurrentRaceResults(results) {
@@ -646,6 +684,19 @@
             HISTORY_RECORDS = await getAllHistoryRecords();
         }
 
+        window.addEventListener('storage', (event) => {
+            if (event.key !== 'keiba-yosou-data-v8') return;
+            const syncedCount = getPaddockSyncedHorseCount();
+            if (syncedCount == null) return;
+            APP_STATE.horseCount = syncedCount;
+            APP_STATE.raceHorseCounts = APP_STATE.raceHorseCounts || {};
+            APP_STATE.raceHorseCounts[getActiveRaceKey()] = syncedCount;
+            const select = document.getElementById('horse-count');
+            if (select) select.value = String(syncedCount);
+            renderHorseTable();
+            saveToLocalStorage();
+        });
+
         window.onload = async function () {
             await loadFromLocalStorage();
             initHorseCountDropdown();
@@ -690,6 +741,9 @@
             document.getElementById('current-display-date').innerText = formatDisplayDate(APP_STATE.currentDate, APP_STATE.dateFilterType);
             loadActiveHorseCount();
             saveActiveHorseCount();
+            const activeKey = getActiveRaceKey();
+            const hasLocalActiveCart = (APP_STATE.cart || []).some(item => raceKey(item.date, item.place, item.rNum) === activeKey);
+            if (!hasLocalActiveCart) loadActiveRaceCart();
             APP_STATE.results = cloneData(getCurrentRaceResults());
         }
 
@@ -699,6 +753,7 @@
             const todayStr = new Date().toISOString().split('T')[0];
             localStorage.setItem('sim_last_date', todayStr);
             localStorage.setItem('sim_app_state', JSON.stringify(APP_STATE));
+            renderCurrentRaceFinancials();
             // 操作が短時間に連続しても、古い非同期保存が新しい状態を上書きしないよう直列化する。
             const snapshot = cloneData(APP_STATE);
             archiveWriteQueue = archiveWriteQueue
@@ -716,15 +771,20 @@
             saveToLocalStorage();
         }
 
-        function onRaceConditionChange() {
-            // 競馬場変更時はracePlace更新前のキーで保存済みの状態を維持し、新しいレースの頭数を読み込む
+        async function onRaceConditionChange(previousStateSaved = false) {
+            // 切替前のレース状態を先に履歴DBへ保存し、切替先のデータで上書きしない。
+            if (!previousStateSaved) await saveToLocalStorage();
             resetCurrentSelectionToDefault();
             APP_STATE.racePlace = document.getElementById('race-place').value;
+            const historyRecord = loadActiveRaceCart();
             loadActiveHorseCount();
             renderHorseTable();
             APP_STATE.results = cloneData(getCurrentRaceResults());
+            if (historyRecord?.results) {
+                APP_STATE.raceResults = APP_STATE.raceResults || {};
+                APP_STATE.raceResults[getActiveRaceKey()] = cloneData(historyRecord.results);
+            }
             renderResultTable();
-            // 切替後の日付・レース場・R番号に対応する買い目点数へ更新
             updateCartBadge();
             saveConditionState();
         }
@@ -752,8 +812,9 @@
             return `${y}年${String(m).padStart(2,'0')}月${String(day).padStart(2,'0')}日(${w})`;
         }
 
-        function shiftDate(diff) {
+        async function shiftDate(diff) {
             saveActiveHorseCount();
+            await saveToLocalStorage();
             const d = new Date(APP_STATE.currentDate);
             const type = APP_STATE.dateFilterType;
             if (type === '月別') d.setMonth(d.getMonth() + diff);
@@ -761,8 +822,13 @@
             else d.setDate(d.getDate() + diff);
 
             APP_STATE.currentDate = d.toISOString().split('T')[0];
+            const historyRecord = loadActiveRaceCart();
             loadActiveHorseCount();
             APP_STATE.results = cloneData(getCurrentRaceResults());
+            if (historyRecord?.results) {
+                APP_STATE.raceResults = APP_STATE.raceResults || {};
+                APP_STATE.raceResults[getActiveRaceKey()] = cloneData(historyRecord.results);
+            }
             document.getElementById('current-display-date').innerText = formatDisplayDate(APP_STATE.currentDate, type);
             renderResultTable();
             // 日付変更後のレース条件に対応する買い目点数へ更新
@@ -798,11 +864,12 @@
                 btn.type = 'button';
                 btn.className = `py-1.5 rounded-lg text-xs font-bold border transition ${APP_STATE.raceNumber === i ? 'bg-sky-600 text-white border-sky-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`;
                 btn.textContent = `${i}R`;
-                btn.onclick = () => {
+                btn.onclick = async () => {
                     if (APP_STATE.raceNumber !== i) {
                         saveActiveHorseCount();
+                        await saveToLocalStorage();
                         APP_STATE.raceNumber = i;
-                        onRaceConditionChange();
+                        await onRaceConditionChange(true);
                         initRaceNumberGrid();
                     }
                 };
@@ -888,6 +955,7 @@
 
         function switchSubMode(mode) {
             APP_STATE.subMode = mode;
+            if (mode === 'box') APP_STATE.isMulti = false;
             APP_STATE.selection.axis2 = null;
             APP_STATE.isExpanded = false;
             APP_STATE.isFullyDecomposed = false;
@@ -953,7 +1021,8 @@
             const count = parseInt(APP_STATE.horseCount);
 
             if (ticket === "wakuren") {
-                head.innerHTML = `<tr><th class="py-1.5 px-1 w-10 border-r border-gray-200">枠</th><th class="py-1.5 px-1 w-12 border-r border-gray-200">馬番</th><th class="py-1.5 px-1 border-r border-gray-200">枠1</th><th class="py-1.5 px-1">枠2</th></tr>`;
+                const isBox = sub === 'box';
+                head.innerHTML = `<tr><th class="py-1.5 px-1 w-10 border-r border-gray-200">枠</th><th class="py-1.5 px-1 w-12 border-r border-gray-200">馬番</th>${isBox ? '<th class="py-1.5 px-1">選択</th>' : '<th class="py-1.5 px-1 border-r border-gray-200">枠1</th><th class="py-1.5 px-1">枠2</th>'}</tr>`;
                 const activeFrames = getActiveFrames(count);
 
                 activeFrames.forEach(fNum => {
@@ -973,39 +1042,33 @@
                         html += `<td class="font-bold py-1.5 px-1 text-gray-700 border-r border-gray-200 text-center">${hNum}</td>`;
 
                         if (idx === 0) {
-                            const chk1 = APP_STATE.selection.pos1.includes(fNum);
-                            const chk2 = APP_STATE.selection.pos2.includes(fNum);
-                            html += `<td rowspan="${horsesInFrame.length}" class="py-1.5 px-1 border-r border-gray-200 align-middle text-center cursor-pointer" onclick="handleCellClick(event, 'pos1', ${fNum})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk1 ? 'checked' : ''}></td>`;
-                            html += `<td rowspan="${horsesInFrame.length}" class="py-1.5 px-1 align-middle text-center cursor-pointer" onclick="handleCellClick(event, 'pos2', ${fNum})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk2 ? 'checked' : ''}></td>`;
+                            if (isBox) {
+                                const checked = APP_STATE.selection.boxSelected.includes(fNum);
+                                html += `<td rowspan="${horsesInFrame.length}" class="py-1.5 px-1 align-middle text-center cursor-pointer" onclick="handleCellClick(event, 'boxSingle', ${fNum})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${checked ? 'checked' : ''}></td>`;
+                            } else {
+                                const chk1 = APP_STATE.selection.pos1.includes(fNum);
+                                const chk2 = APP_STATE.selection.pos2.includes(fNum);
+                                html += `<td rowspan="${horsesInFrame.length}" class="py-1.5 px-1 border-r border-gray-200 align-middle text-center cursor-pointer" onclick="handleCellClick(event, 'pos1', ${fNum})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk1 ? 'checked' : ''}></td>`;
+                                html += `<td rowspan="${horsesInFrame.length}" class="py-1.5 px-1 align-middle text-center cursor-pointer" onclick="handleCellClick(event, 'pos2', ${fNum})"><input type="checkbox" class="w-4 h-4 text-sky-500 rounded focus:ring-sky-400 pointer-events-none" ${chk2 ? 'checked' : ''}></td>`;
+                            }
                         }
                         tr.innerHTML = html;
                         body.appendChild(tr);
                     });
                 });
 
-                foot.innerHTML = `<tr>
-                    <td colspan="2" class="py-1.5 px-1 text-gray-500 font-bold bg-gray-100 text-[11px] align-middle border-r border-gray-200 text-center">
-                        <div class="flex flex-col items-center justify-center">
-                            <span class="text-gray-600 font-semibold py-0.5">全選択</span>
-                            <hr class="w-full border-t border-gray-300 my-0.5">
-                            <span class="text-gray-400 font-semibold py-0.5">全解除</span>
-                        </div>
-                    </td>
-                    <td class="py-1.5 px-1 align-middle border-r border-gray-200 text-center">
-                        <div class="flex flex-col items-center justify-center">
-                            <button type="button" onclick="toggleColumnAll('pos1', true)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-sky-50 text-sky-600 font-bold text-[11px] flex items-center justify-center shadow-sm">全</button>
-                            <hr class="w-full border-t border-gray-300 my-0.5">
-                            <button type="button" onclick="toggleColumnAll('pos1', false)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-500 font-bold text-[11px] flex items-center justify-center shadow-sm">消</button>
-                        </div>
-                    </td>
-                    <td class="py-1.5 px-1 align-middle text-center">
-                        <div class="flex flex-col items-center justify-center">
-                            <button type="button" onclick="toggleColumnAll('pos2', true)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-sky-50 text-sky-600 font-bold text-[11px] flex items-center justify-center shadow-sm">全</button>
-                            <hr class="w-full border-t border-gray-300 my-0.5">
-                            <button type="button" onclick="toggleColumnAll('pos2', false)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-500 font-bold text-[11px] flex items-center justify-center shadow-sm">消</button>
-                        </div>
-                    </td>
-                </tr>`;
+                if (isBox) {
+                    foot.innerHTML = `<tr>
+                        <td colspan="2" class="py-1.5 px-1 text-gray-500 font-bold bg-gray-100 text-[11px] align-middle border-r border-gray-200 text-center"><div class="flex flex-col items-center justify-center"><span class="text-gray-600 font-semibold py-0.5">全選択</span><hr class="w-full border-t border-gray-300 my-0.5"><span class="text-gray-400 font-semibold py-0.5">全解除</span></div></td>
+                        <td class="py-1.5 px-1 align-middle text-center"><div class="flex flex-col items-center justify-center"><button type="button" onclick="toggleColumnAll('boxSingle', true)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-sky-50 text-sky-600 font-bold text-[11px]">全</button><hr class="w-full border-t border-gray-300 my-0.5"><button type="button" onclick="toggleColumnAll('boxSingle', false)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-500 font-bold text-[11px]">消</button></div></td>
+                    </tr>`;
+                } else {
+                    foot.innerHTML = `<tr>
+                        <td colspan="2" class="py-1.5 px-1 text-gray-500 font-bold bg-gray-100 text-[11px] align-middle border-r border-gray-200 text-center"><div class="flex flex-col items-center justify-center"><span class="text-gray-600 font-semibold py-0.5">全選択</span><hr class="w-full border-t border-gray-300 my-0.5"><span class="text-gray-400 font-semibold py-0.5">全解除</span></div></td>
+                        <td class="py-1.5 px-1 align-middle border-r border-gray-200 text-center"><div class="flex flex-col items-center justify-center"><button type="button" onclick="toggleColumnAll('pos1', true)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-sky-50 text-sky-600 font-bold text-[11px]">全</button><hr class="w-full border-t border-gray-300 my-0.5"><button type="button" onclick="toggleColumnAll('pos1', false)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-500 font-bold text-[11px]">消</button></div></td>
+                        <td class="py-1.5 px-1 align-middle text-center"><div class="flex flex-col items-center justify-center"><button type="button" onclick="toggleColumnAll('pos2', true)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-sky-50 text-sky-600 font-bold text-[11px]">全</button><hr class="w-full border-t border-gray-300 my-0.5"><button type="button" onclick="toggleColumnAll('pos2', false)" class="w-6 h-5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-500 font-bold text-[11px]">消</button></div></td>
+                    </tr>`;
+                }
                 return;
             }
 
@@ -1254,7 +1317,7 @@
                 if (sub === "box") {
                     const sel = [...APP_STATE.selection.boxSelected].sort((a,b)=>a-b);
                     for(let i=0; i<sel.length; i++){
-                        for(let j=i; j<sel.length; j++){
+                        for(let j=i+1; j<sel.length; j++){
                             combos.push([sel[i], sel[j]]);
                         }
                     }
@@ -1410,7 +1473,7 @@
 
             // マルチは馬単なら表裏、3連単なら同じ馬の全着順 permutations を購入対象にする。
             // ボックスやながしで既に同一組み合わせが生成されていても重複は除去する。
-            if (APP_STATE.isMulti && (ticket === 'umatan' || ticket === 'sanrentan')) {
+            if (APP_STATE.isMulti && sub !== 'box' && (ticket === 'umatan' || ticket === 'sanrentan')) {
                 const expanded = [];
                 const seen = new Set();
                 combos.forEach(combo => {
@@ -1754,7 +1817,7 @@
                 compact: APP_STATE.currentTicket !== 'tansho_fukusho',
                 displayExpanded: false,
                 isDecomposed: false,
-                isMulti: APP_STATE.isMulti,
+                isMulti: APP_STATE.isMulti && APP_STATE.subMode !== 'box',
                 selection: cloneData(APP_STATE.selection),
                 items: savedItems,
                 combos: cloneData(combos),
@@ -1788,6 +1851,7 @@
             }
             saveToLocalStorage();
             updateCartBadge();
+            renderCurrentRaceFinancials();
 
             // 追加後も現在の券種・買い方・選択チェックを維持する。
             // 券種を切り替えた場合は switchTicket() 側で選択がリセットされる。
@@ -1858,7 +1922,7 @@
             const amountValue = sameAmount ? `value="${firstAmount}"` : 'placeholder="混在"';
             return `<div class="bg-white p-2.5 rounded-lg border border-gray-200">
                 <div class="flex items-center justify-between gap-2 mb-2">
-                    <span class="text-xs font-bold text-gray-700">${group.subMode === 'formation' ? 'フォーメーション' : group.subMode === 'box' ? 'ボックス' : group.subMode === 'nagashi' ? 'ながし' : '買い目'}</span>
+                    <span class="text-xs font-bold text-gray-700">${group.subMode === 'formation' ? 'フォーメーション' : group.subMode === 'box' ? 'ボックス' : group.subMode === 'nagashi' ? 'ながし' : '買い目'}${group.isMulti ? '（マルチ）' : ''}</span>
                     <div class="flex items-center gap-1 shrink-0">
                         <span class="text-xs font-bold text-gray-600">各</span>
                         <button type="button" onclick="adjustCartGroupAmount(${groupIdx}, -1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300">-</button>
@@ -2224,6 +2288,7 @@
                     tbody.appendChild(tr);
                 }
             });
+            renderCurrentRaceFinancials();
         }
 
         function handleResultTableKeyNavigation(e, currentInput) {
@@ -2282,11 +2347,34 @@
             }
             setCurrentRaceResults(APP_STATE.results);
             saveToLocalStorage();
+            renderCurrentRaceFinancials();
         }
 
         function normalizeResultCombo(value, unordered = false) {
             const nums = String(value || '').match(/\d+/g) || [];
             return unordered ? nums.sort((a, b) => Number(a) - Number(b)).join('-') : nums.join('-');
+        }
+
+        function calculateCurrentRaceFinancials() {
+            const place = document.getElementById('race-place')?.value || APP_STATE.racePlace || '';
+            const rNum = Number(APP_STATE.raceNumber);
+            const groups = (APP_STATE.cart || []).filter(group => group.date === APP_STATE.currentDate && group.place === place && Number(group.rNum) === rNum);
+            const totalPurchase = groups.reduce((sum, group) => sum + (group.items || []).reduce((itemSum, item) => itemSum + Math.max(1, Number(item.amount) || 1) * 100, 0), 0);
+            const payoutRecord = { results: APP_STATE.results, cart: groups };
+            const totalPayout = calculateRacePayout(payoutRecord);
+            return { totalPurchase, totalPayout, balance: totalPayout - totalPurchase };
+        }
+
+        function renderCurrentRaceFinancials() {
+            const purchaseEl = document.getElementById('current-race-purchase');
+            if (!purchaseEl) return;
+            const values = calculateCurrentRaceFinancials();
+            document.getElementById('current-race-purchase').textContent = `${values.totalPurchase.toLocaleString()}円`;
+            document.getElementById('current-race-payout').textContent = `${values.totalPayout.toLocaleString()}円`;
+            const balanceEl = document.getElementById('current-race-balance');
+            balanceEl.textContent = `${values.balance.toLocaleString()}円`;
+            balanceEl.classList.toggle('text-red-600', values.balance < 0);
+            balanceEl.classList.toggle('text-emerald-600', values.balance > 0);
         }
 
         function calculateRacePayout(record) {
@@ -2365,6 +2453,14 @@
             document.getElementById('summary-payout-display').innerText = `${totalPayout.toLocaleString()}円`;
             const net = totalPayout - totalPurchase;
             document.getElementById('balance-total-display').innerText = `${net.toLocaleString()} 円`;
+        }
+
+        function clearAiResultText() {
+            const textarea = document.getElementById('ai-result-textarea');
+            if (textarea) {
+                textarea.value = '';
+                textarea.focus();
+            }
         }
 
         function parseAiResultText() {
@@ -2737,15 +2833,25 @@
                     } else {
                         importedRecords = recordsFromLegacyJSON(JSON.parse(content));
                     }
-                    if (!confirm('インポートした記録を既存の履歴に統合します。同じレースは読み込んだデータで更新します。よろしいですか？')) return;
-
+                    const validRecords = [];
                     for (const incoming of importedRecords) {
                         if (!incoming.key || !incoming.date || !Array.isArray(incoming.cart)) throw new Error('レース記録の形式が不正です');
+                        const financials = buildRaceFinancials(incoming);
+                        // 購入金額0円のレースは、結果を含めレース記録ごとインポート対象外にする。
+                        if (financials.totalPurchase <= 0) continue;
+                        validRecords.push({ incoming, financials });
+                    }
+                    if (!validRecords.length) {
+                        alert('購入金額が0円のレースのみだったため、インポートする記録はありませんでした。');
+                        return;
+                    }
+                    if (!confirm(`購入金額が0円のレースを除外し、${validRecords.length}レース分の記録を既存の履歴に統合します。同じレースは読み込んだデータで更新します。よろしいですか？`)) return;
+
+                    for (const { incoming, financials } of validRecords) {
                         const existing = HISTORY_RECORDS.find(r => r.key === incoming.key);
                         const record = { ...incoming, cart: incoming.cart || [] };
                         if (!Number(record.horseCount)) record.horseCount = Number(record.cart.find(x => Number(x.horseCount))?.horseCount) || null;
                         if (existing && !record.results) record.results = existing.results || null;
-                        const financials = buildRaceFinancials(record);
                         record.bets = financials.bets;
                         record.totalPurchase = financials.totalPurchase;
                         record.totalPayout = financials.totalPayout;
@@ -2767,7 +2873,7 @@
                     renderResultTable();
                     updateCartBadge();
                     await calculateSummary();
-                    alert(`${importedRecords.length}レース分の記録を統合しました。`);
+                    alert(`${validRecords.length}レース分の記録を統合しました。（購入金額0円のレース${importedRecords.length - validRecords.length}件を除外）`);
                 } catch(err) {
                     console.error('インポートエラー:', err);
                     alert('インポートに失敗しました。ファイル形式または内容を確認してください。');
@@ -2887,7 +2993,10 @@
         async function exportData(format = 'json') {
             try {
                 await archiveState(APP_STATE);
-                const records = await getAllHistoryRecords();
+                // 買い目を全削除したレース（購入金額0円）は、JSON・CSVともに出力対象外にする。
+                // cartから購入金額を再計算することで、古いtotalPurchaseやbetsの値に左右されない。
+                const allRecords = await getAllHistoryRecords();
+                const records = allRecords.filter(record => buildRaceFinancials(record).totalPurchase > 0);
                 const incompleteResults = findIncompleteRaceResults(records);
                 if (incompleteResults.length > 0) {
                     const displayErrors = incompleteResults.slice(0, 15);
