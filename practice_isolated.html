@@ -593,10 +593,10 @@
         }
 
         function getCurrentRaceResults() {
-            const place = document.getElementById('race-place')?.value || APP_STATE.racePlace || '';
+            const place = APP_STATE.racePlace || document.getElementById('race-place')?.value || '';
             const key = raceKey(APP_STATE.currentDate, place, APP_STATE.raceNumber);
             const saved = APP_STATE.raceResults?.[key] || HISTORY_RECORDS.find(r => r.key === key)?.results;
-            return saved ? saved : { tansho: { horse: '', payout: '' }, fukusho: { horses: ['', '', ''], payouts: ['', '', ''] }, wakuren: { combo: '', payout: '' }, umaren: { combo: '', payout: '' }, wide: { combos: ['', '', ''], payouts: ['', '', ''] }, umatan: { combo: '', payout: '' }, sanrenfuku: { combo: '', payout: '' }, sanrentan: { combo: '', payout: '' } };
+            return saved ? cloneData(saved) : { tansho: { horse: '', payout: '' }, fukusho: { horses: ['', '', ''], payouts: ['', '', ''] }, wakuren: { combo: '', payout: '' }, umaren: { combo: '', payout: '' }, wide: { combos: ['', '', ''], payouts: ['', '', ''] }, umatan: { combo: '', payout: '' }, sanrenfuku: { combo: '', payout: '' }, sanrentan: { combo: '', payout: '' } };
         }
 
         // 選択中レースの買い目を履歴DBから読み込む。結果だけでなく買い目もレース切替時に復元する。
@@ -611,7 +611,7 @@
         }
 
         function setCurrentRaceResults(results) {
-            const place = document.getElementById('race-place')?.value || APP_STATE.racePlace || '';
+            const place = APP_STATE.racePlace || document.getElementById('race-place')?.value || '';
             const key = raceKey(APP_STATE.currentDate, place, APP_STATE.raceNumber);
             APP_STATE.raceResults = APP_STATE.raceResults || {};
             APP_STATE.raceResults[key] = cloneData(results);
@@ -655,9 +655,10 @@
             }
             const activePlace = state.racePlace || document.getElementById('race-place')?.value || '';
             const activeKey = raceKey(state.currentDate, activePlace, state.raceNumber);
-            if (!grouped.has(activeKey)) grouped.set(activeKey, { key: activeKey, date: state.currentDate, place: activePlace, rNum: state.raceNumber, horseCount: Number(state.raceHorseCounts?.[activeKey]) || Number(state.horseCount) || null, cart: [], results: cloneData(state.results) });
+            const activeResults = state.raceResults?.[activeKey] || state.results;
+            if (!grouped.has(activeKey)) grouped.set(activeKey, { key: activeKey, date: state.currentDate, place: activePlace, rNum: state.raceNumber, horseCount: Number(state.raceHorseCounts?.[activeKey]) || Number(state.horseCount) || null, cart: [], results: cloneData(activeResults) });
             else {
-                grouped.get(activeKey).results = cloneData(state.results);
+                grouped.get(activeKey).results = cloneData(activeResults);
                 if (!grouped.get(activeKey).horseCount && Number(state.horseCount)) grouped.get(activeKey).horseCount = Number(state.horseCount);
             }
 
@@ -751,6 +752,10 @@
 
         function saveToLocalStorage() {
             const todayStr = new Date().toISOString().split('T')[0];
+            APP_STATE.raceResults = APP_STATE.raceResults || {};
+            const activePlace = APP_STATE.racePlace || document.getElementById('race-place')?.value || '';
+            const activeKey = raceKey(APP_STATE.currentDate, activePlace, APP_STATE.raceNumber);
+            APP_STATE.raceResults[activeKey] = cloneData(APP_STATE.results);
             localStorage.setItem('sim_last_date', todayStr);
             localStorage.setItem('sim_app_state', JSON.stringify(APP_STATE));
             renderCurrentRaceFinancials();
@@ -2534,6 +2539,7 @@
             }
 
             renderResultTable();
+            setCurrentRaceResults(APP_STATE.results);
             saveToLocalStorage();
             alert("結果データを自動解析・入力しました。");
         }
